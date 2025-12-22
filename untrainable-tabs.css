@@ -227,6 +227,7 @@ body.dark-mode .wf-loadmore-text{ color: rgba(255, 255, 255, 0.9); }
   overflow: hidden;
   border-radius: var(--radius);
   background: rgba(0, 0, 0, 0.03);
+   position: relative; /* REQUIRED */
 }
 body.dark-mode .wf-frame{ background: rgba(0, 0, 0, 0.06); }
 
