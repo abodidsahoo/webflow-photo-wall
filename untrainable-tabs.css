@@ -319,12 +319,13 @@ body.dark-mode .wf-comment-btn{
   border-color: rgba(255,255,255,0.14);
 }
 .wf-frame:hover .wf-comment-btn,
-.wf-frame:focus-within .wf-comment-btn{
+.wf-frame:focus-within .wf-comment-btn,
+.wf-frame:hover button.wf-comment-btn {
   opacity: 1;
   transform: translateY(0);
 }
 @media (max-width: 767px){
-  .wf-comment-btn{ opacity: 1; transform: translateY(0); }
+  .wf-comment-btn{ opacity: 1; z-index: 9999; transform: translateY(0); }
 }
 
 /* Modal (shared by Tab 2 + Tab 3) */
