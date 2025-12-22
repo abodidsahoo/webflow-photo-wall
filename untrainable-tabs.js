@@ -934,15 +934,192 @@ window.__initRp3Once = async function () {
 
 
 
-    
+/* =========================================================
+   TAB 4 — Visualization (WORKING VERSION — RESTORED)
+   Expected HTML:
+     #um-stage
+     #um-notes
+========================================================= */
 
-    // Tab 4 placeholder (wire later)
-    window.__initT4Once = async function() {
-      if (didT4) return;
-      didT4 = true;
-      const notes = document.getElementById("um-notes");
-      if (notes) notes.textContent = "Tab 4 ready. (Hook up visualization next.)";
+let __TAB4_INITED__ = false;
+
+window.__initUM4Once = async function () {
+  if (__TAB4_INITED__) return;
+  __TAB4_INITED__ = true;
+
+  const stage = document.getElementById("um-stage");
+  const notesLayer = document.getElementById("um-notes");
+  if (!stage || !notesLayer) return;
+
+  // Ensure Supabase exists
+  if (!window.supabase || !window.supabase.createClient) {
+    const s = document.createElement("script");
+    s.src = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2";
+    document.head.appendChild(s);
+    await new Promise(res => s.onload = res);
+  }
+
+  const SUPABASE_URL = "https://vbzgchrnobnxkxdcupes.supabase.co";
+  const SUPABASE_ANON_KEY =
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZiemdjaHJub2JueGt4ZGN1cGVzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjYwMzQ0NDIsImV4cCI6MjA4MTYxMDQ0Mn0.nLdQW8f-nJwCFWUkURcr2ZPA694fAKlseYO__MOPGa8";
+
+  const supa = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  const { data, error } = await supa
+    .from("photo_feedback")
+    .select("image_url,feeling_text,name,created_at")
+    .order("created_at", { ascending: false })
+    .limit(6000);
+
+  if (error || !Array.isArray(data)) {
+    console.warn("Tab 4 load failed:", error);
+    return;
+  }
+
+  // Group by image
+  const map = new Map();
+  data.forEach(r => {
+    if (!r.image_url) return;
+    const key = String(r.image_url).trim();
+    if (!map.has(key)) map.set(key, []);
+    map.get(key).push(r);
+  });
+
+  const TOP_N = 12;
+  const items = [...map.entries()]
+    .map(([url, rows]) => ({ url, rows, count: rows.length }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, TOP_N);
+
+  if (!items.length) return;
+
+  const rand = (min, max) => min + Math.random() * (max - min);
+  const maxCount = Math.max(...items.map(x => x.count));
+  const pad = 12;
+
+  function keyFromUrl(url) {
+    try { return btoa(unescape(encodeURIComponent(url))); }
+    catch { return url.replace(/[^a-z0-9]/gi, "_"); }
+  }
+
+  function radiusForRank(rank, count) {
+    const r = count / maxCount;
+    if (rank === 0) return Math.round(170 + r * 80);
+    if (rank <= 2) return Math.round(130 + r * 55);
+    if (rank <= 6) return Math.round(105 + r * 45);
+    return Math.round(88 + r * 35);
+  }
+
+  function seedCenters(sizes) {
+    const W = stage.clientWidth;
+    const H = stage.clientHeight;
+    const centers = [];
+    const edge = 18;
+
+    sizes.forEach((size, i) => {
+      const r = size / 2;
+      let x = rand(edge + r, W - edge - r);
+      let y = rand(edge + r, H - edge - r);
+      centers.push({ x, y });
+    });
+    return centers;
+  }
+
+  const states = [];
+  let activeState = null;
+
+  function clearNotes(key) {
+    notesLayer.querySelectorAll(`[data-for="${key}"]`).forEach(n => n.remove());
+  }
+
+  function renderNotes(state) {
+    clearNotes(state.key);
+
+    const cx = state.x + state.size / 2;
+    const cy = state.y + state.size / 2;
+    const rows = state.item.rows.slice(0, 15);
+
+    rows.forEach((r, i) => {
+      const note = document.createElement("div");
+      note.className = "um-note";
+      note.dataset.for = state.key;
+      note.textContent = r.feeling_text || "";
+      notesLayer.appendChild(note);
+
+      const angle = (Math.PI * 2 * i) / rows.length;
+      const dist = state.size / 2 + 60 + rand(0, 40);
+      note.style.left = Math.round(cx + Math.cos(angle) * dist) + "px";
+      note.style.top  = Math.round(cy + Math.sin(angle) * dist) + "px";
+    });
+  }
+
+  function createNode(item, rank, center) {
+    const rad = radiusForRank(rank, item.count);
+    const size = rad * 2;
+
+    const el = document.createElement("div");
+    el.className = "um-node";
+    el.style.width = size + "px";
+    el.style.height = size + "px";
+
+    const img = document.createElement("img");
+    img.src = item.url;
+    img.loading = "lazy";
+    el.appendChild(img);
+
+    stage.appendChild(el);
+
+    const state = {
+      el, item, size,
+      x: center.x - size / 2,
+      y: center.y - size / 2,
+      vx: 0, vy: 0,
+      key: keyFromUrl(item.url)
     };
+
+    el.addEventListener("mouseenter", () => {
+      activeState = state;
+      renderNotes(state);
+    });
+
+    el.addEventListener("mouseleave", () => {
+      if (activeState === state) {
+        activeState = null;
+        clearNotes(state.key);
+      }
+    });
+
+    return state;
+  }
+
+  const sizes = items.map((it, i) => radiusForRank(i, it.count) * 2);
+  const centers = seedCenters(sizes);
+
+  items.forEach((it, i) => {
+    states.push(createNode(it, i, centers[i]));
+  });
+
+  function tick() {
+    const W = stage.clientWidth;
+    const H = stage.clientHeight;
+
+    states.forEach(s => {
+      s.x += s.vx;
+      s.y += s.vy;
+
+      s.x = Math.max(pad, Math.min(W - s.size - pad, s.x));
+      s.y = Math.max(pad, Math.min(H - s.size - pad, s.y));
+
+      s.el.style.left = Math.round(s.x) + "px";
+      s.el.style.top  = Math.round(s.y) + "px";
+    });
+
+    requestAnimationFrame(tick);
+  }
+
+  requestAnimationFrame(tick);
+};
+
 
     // ---------- 9) Boot: restore last tab ----------
     let start = "t1";
