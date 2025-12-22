@@ -320,7 +320,7 @@ body.dark-mode .wf-comment-btn{
 }
 .wf-frame:hover .wf-comment-btn,
 .wf-frame:focus-within .wf-comment-btn,
-.wf-frame:hover button.wf-comment-btn {
+.wf-frame:focus-within button.wf-comment-btn {
   opacity: 1;
   transform: translateY(0);
 }
