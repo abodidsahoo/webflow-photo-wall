@@ -774,7 +774,7 @@
     if (__TAB3_INITED__) return;
     __TAB3_INITED__ = true;
 
-    const root = document.getElementById("rp3-root");
+    const root = document.getElementById("rp-root");
     if (!root) return;
 
     await ensureSupabase();
@@ -783,7 +783,7 @@
        THEME (kept working)
        + sync with body.dark-mode
     ========================= */
-    const themeBtn = document.getElementById("rp3-theme-btn");
+    const themeBtn = document.getElementById("rp-theme-btn");
     if (!themeBtn) return;
 
     const lightOpt = themeBtn.querySelector(".rp-theme-light");
@@ -830,8 +830,8 @@
     const supa = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     const TABLE = "photo_feedback";
 
-    const feed = document.getElementById("rp3-feed");
-    const status = document.getElementById("rp3-status");
+    const feed = document.getElementById("rp-feed");
+    const status = document.getElementById("rp-status");
 
     const PASTELS = ["#f7f2ea","#f3f0ea","#f2f4ff","#f4f7f2","#f8f1f6","#f6f3ff","#f5f6f7","#f3efe8"];
     const rand = (min,max)=> min + Math.random()*(max-min);
@@ -850,15 +850,15 @@
     /* =========================
        MODAL LOGIC (Tab 3 ids)
     ========================= */
-    const modal = document.getElementById("rp3-wf-modal");
-    const modalBackdrop = document.getElementById("rp3-wf-modal-backdrop");
-    const modalClose = document.getElementById("rp3-wf-modal-close");
-    const modalImg = document.getElementById("rp3-wf-modal-img");
-    const form = document.getElementById("rp3-wf-modal-form");
-    const nameEl = document.getElementById("rp3-wf-name");
-    const feelEl = document.getElementById("rp3-wf-feel");
-    const submitBtn = document.getElementById("rp3-wf-submit");
-    const statusEl = document.getElementById("rp3-wf-status");
+    const modal = document.getElementById("wf-modal");
+const modalBackdrop = document.getElementById("wf-modal-backdrop");
+const modalClose = document.getElementById("wf-modal-close");
+const modalImg = document.getElementById("wf-modal-img");
+const form = document.getElementById("wf-modal-form");
+const nameEl = document.getElementById("wf-name");
+const feelEl = document.getElementById("wf-feel");
+const submitBtn = document.getElementById("wf-submit");
+const statusEl = document.getElementById("wf-status");
 
     (function setupKeyboardSafeModal(){
       if (!window.visualViewport || !modal) return;
