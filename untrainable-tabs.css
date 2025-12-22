@@ -1,6 +1,5 @@
 /* =========================================================
    GLOBAL TAB SHELL (applies to all tabs)
-   (From your earlier “TABS SHELL (clean buttons)” block)
 ========================================================= */
 .um-root{
   width: 100%;
@@ -36,7 +35,6 @@
 
 /* =========================================================
    TAB 1 CSS (Photo wall + theme + load more + loading pill)
-   (From your earlier Tab 1 “existing photo grid” CSS)
 ========================================================= */
 
 /* NOTE: avoid global reset duplication if Webflow already has one */
@@ -227,7 +225,9 @@ body.dark-mode .wf-loadmore-text{ color: rgba(255, 255, 255, 0.9); }
   overflow: hidden;
   border-radius: var(--radius);
   background: rgba(0, 0, 0, 0.03);
-   position: relative; /* REQUIRED */
+
+  /* ✅ FIX (DO NOT REMOVE): makes Share button anchor correctly */
+  position: relative;
 }
 body.dark-mode .wf-frame{ background: rgba(0, 0, 0, 0.06); }
 
@@ -238,6 +238,9 @@ body.dark-mode .wf-frame{ background: rgba(0, 0, 0, 0.06); }
   object-fit: cover;
   object-position: center;
   transform: translateZ(0);
+
+  /* optional but helps hover/click reliability */
+  pointer-events: none;
 }
 
 /* Loading */
@@ -287,12 +290,9 @@ body.dark-mode .wf-loading-dot{ background: #fff; }
 
 /* =========================================================
    TAB 2 CSS (Add Responses)
-   From your earlier Tab2 embed styles:
-   - Includes: comment button + modal + form controls
-   - Keeps class names same as your working code (wf-*)
 ========================================================= */
 
-/* Share feeling button overlay (used in Tab 2 and also fine anywhere) */
+/* Share feeling button overlay (Tab 2) */
 .wf-comment-btn{
   position: absolute;
   left: 10px;
@@ -327,7 +327,7 @@ body.dark-mode .wf-comment-btn{
   .wf-comment-btn{ opacity: 1; transform: translateY(0); }
 }
 
-/* Modal (shared by Tab 2 + Tab 3, matches your earlier modal CSS) */
+/* Modal (shared by Tab 2 + Tab 3) */
 .wf-modal{ position: fixed; inset: 0; z-index: 250; display: none; }
 .wf-modal.is-open{
   display: flex;
@@ -464,10 +464,11 @@ body.dark-mode .wf-submit{ border-color: rgba(255,255,255,0.14); }
 }
 
 /* =========================================================
-   TAB 3 CSS (Responses Feed) — SCOPED
-   (From your earlier “TAB 3 SCOPED STYLES” block)
+   TAB 3 CSS (Responses Feed) — FIXED SCOPE
+   ✅ CHANGED: #rp3-root -> #rp-root
+   ✅ CHANGED: #rp3-theme-btn -> #rp-theme-btn
 ========================================================= */
-#rp3-root{
+#rp-root{
   --muted: rgba(0,0,0,0.55);
   --border: rgba(0,0,0,0.10);
   --font:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display",system-ui,Segoe UI,Roboto,Arial,sans-serif;
@@ -482,21 +483,21 @@ body.dark-mode .wf-submit{ border-color: rgba(255,255,255,0.14); }
 
   --stickyTop: 0px;
 }
-body.dark-mode #rp3-root{
+body.dark-mode #rp-root{
   --muted: rgba(255,255,255,0.62);
   --border: rgba(255,255,255,0.12);
   --cardShadow: 0 14px 30px rgba(0,0,0,0.38);
 }
-#rp3-root, #rp3-root *{ box-sizing:border-box; font-family:var(--font); }
+#rp-root, #rp-root *{ box-sizing:border-box; font-family:var(--font); }
 
 /* Theme Toggle */
-#rp3-root .rp-theme-toggle{
+#rp-root .rp-theme-toggle{
   position:fixed;
   top:16px;
   right:16px;
   z-index:200;
 }
-#rp3-theme-btn{
+#rp-theme-btn{
   display:flex;
   gap:4px;
   padding:4px;
@@ -508,8 +509,8 @@ body.dark-mode #rp3-root{
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
 }
-body.dark-mode #rp3-theme-btn{ background:rgba(20,20,20,0.78); }
-#rp3-theme-btn span{
+body.dark-mode #rp-theme-btn{ background:rgba(20,20,20,0.78); }
+#rp-theme-btn span{
   padding:4px 8px;
   border-radius:4px;
   opacity:.55;
@@ -518,75 +519,75 @@ body.dark-mode #rp3-theme-btn{ background:rgba(20,20,20,0.78); }
   text-transform:uppercase;
   user-select:none;
 }
-#rp3-theme-btn span.active{
+#rp-theme-btn span.active{
   opacity:1;
   background:rgba(0,0,0,0.08);
 }
-body.dark-mode #rp3-theme-btn span.active{
+body.dark-mode #rp-theme-btn span.active{
   background:rgba(255,255,255,0.18);
 }
 
 /* Wrap */
-#rp3-root .rp-wrap{
+#rp-root .rp-wrap{
   max-width: var(--wrapW);
   margin: 0 auto;
   padding: 18px 0 48px;
 }
 @media(max-width: 900px){
-  #rp3-root .rp-wrap{ max-width:100%; padding:16px; }
+  #rp-root .rp-wrap{ max-width:100%; padding:16px; }
 }
-#rp3-root .rp-status{
+#rp-root .rp-status{
   font-size:12px;
   color: var(--muted);
   margin: 12px 0 18px;
 }
-#rp3-root .rp-feed{
+#rp-root .rp-feed{
   display:flex;
   flex-direction:column;
   gap: 72px;
 }
 
 /* Sections */
-#rp3-root .rp-section{
+#rp-root .rp-section{
   display:grid;
   grid-template-columns: 1fr 1fr;
   gap: var(--gap);
   align-items:start;
 }
 @media(max-width: 900px){
-  #rp3-root .rp-section{ grid-template-columns: 1fr; }
+  #rp-root .rp-section{ grid-template-columns: 1fr; }
 }
 @media(min-width: 901px){
-  #rp3-root .rp-section.rp-portrait .rp-photo,
-  #rp3-root .rp-section.rp-portrait .rp-panel{
+  #rp-root .rp-section.rp-portrait .rp-photo,
+  #rp-root .rp-section.rp-portrait .rp-panel{
     position: sticky;
     top: var(--stickyTop);
     align-self: start;
   }
 }
-#rp3-root .rp-section.rp-landscape{ grid-template-columns: 1fr; }
-#rp3-root .rp-landscape .rp-panel{
+#rp-root .rp-section.rp-landscape{ grid-template-columns: 1fr; }
+#rp-root .rp-landscape .rp-panel{
   margin-top: 4px;
   margin-bottom: 18px;
 }
 
 /* Photo */
-#rp3-root .rp-photo{
+#rp-root .rp-photo{
   border-radius: var(--radius);
   overflow:hidden;
   border:1px solid var(--border);
   background: rgba(0,0,0,0.04);
   position: relative;
 }
-body.dark-mode #rp3-root .rp-photo{ background: rgba(255,255,255,0.06); }
+body.dark-mode #rp-root .rp-photo{ background: rgba(255,255,255,0.06); }
 
-#rp3-root .rp-portrait .rp-photo img{
+#rp-root .rp-portrait .rp-photo img{
   width:100%;
   height:min(68vh, 760px);
   object-fit:cover;
   display:block;
 }
-#rp3-root .rp-landscape .rp-photo img{
+#rp-root .rp-landscape .rp-photo img{
   width:100%;
   height:min(72vh, 720px);
   object-fit:cover;
@@ -595,42 +596,42 @@ body.dark-mode #rp3-root .rp-photo{ background: rgba(255,255,255,0.06); }
   display:block;
 }
 @media(max-width: 900px){
-  #rp3-root .rp-photo img{ height:auto !important; transform:none !important; }
+  #rp-root .rp-photo img{ height:auto !important; transform:none !important; }
 }
 
 /* Responses panel */
-#rp3-root .rp-panel{
+#rp-root .rp-panel{
   background: transparent;
   border: none;
   padding: 0;
   overflow: hidden;
 }
 @media(min-width: 901px){
-  #rp3-root .rp-portrait .rp-panel{ height: var(--panelH, 640px); }
+  #rp-root .rp-portrait .rp-panel{ height: var(--panelH, 640px); }
 }
 @media(max-width: 900px){
-  #rp3-root .rp-panel{ height:auto !important; overflow: visible; }
+  #rp-root .rp-panel{ height:auto !important; overflow: visible; }
 }
-#rp3-root .rp-panel-inner{
+#rp-root .rp-panel-inner{
   padding: var(--safePad);
   height: 100%;
   position: relative;
 }
 @media(max-width: 900px){
-  #rp3-root .rp-panel-inner{
+  #rp-root .rp-panel-inner{
     padding: var(--safePadMobile) 0 0;
     position: static;
     height:auto;
   }
 }
-#rp3-root .rp-portrait .rp-canvas{
+#rp-root .rp-portrait .rp-canvas{
   position: relative;
   width: 100%;
   height: 100%;
 }
 
 /* Landscape/mobile flow */
-#rp3-root .rp-grid{
+#rp-root .rp-grid{
   display:flex;
   flex-wrap:wrap;
   gap: 14px;
@@ -638,11 +639,11 @@ body.dark-mode #rp3-root .rp-photo{ background: rgba(255,255,255,0.06); }
   align-items:flex-start;
 }
 @media(max-width: 900px){
-  #rp3-root .rp-grid{ flex-direction:column; }
+  #rp-root .rp-grid{ flex-direction:column; }
 }
 
 /* Cards */
-#rp3-root .rp-card{
+#rp-root .rp-card{
   border-radius: 7px;
   padding: 10px 16px;
   border: 1px solid rgba(0,0,0,0.06);
@@ -656,11 +657,11 @@ body.dark-mode #rp3-root .rp-photo{ background: rgba(255,255,255,0.06); }
   max-width: 320px;
   display: inline-block;
 }
-#rp3-root .rp-portrait .rp-canvas .rp-card{
+#rp-root .rp-portrait .rp-canvas .rp-card{
   position: absolute;
   left: 0; top: 0;
 }
-#rp3-root .rp-text{
+#rp-root .rp-text{
   font-size: 12.5px;
   line-height: 1.35;
   font-weight: 560;
@@ -669,7 +670,7 @@ body.dark-mode #rp3-root .rp-photo{ background: rgba(255,255,255,0.06); }
   overflow-wrap: anywhere;
   word-break: break-word;
 }
-#rp3-root .rp-name{
+#rp-root .rp-name{
   margin-top: 8px;
   font-size: 10.5px;
   font-weight: 650;
@@ -677,7 +678,7 @@ body.dark-mode #rp3-root .rp-photo{ background: rgba(255,255,255,0.06); }
 }
 
 /* Show more */
-#rp3-root .rp-more{
+#rp-root .rp-more{
   display:none;
   margin: 12px auto 0;
   border: 1px solid var(--border);
@@ -689,13 +690,13 @@ body.dark-mode #rp3-root .rp-photo{ background: rgba(255,255,255,0.06); }
   color: inherit;
   width: max-content;
 }
-body.dark-mode #rp3-root .rp-more{ background: rgba(20,20,20,0.65); }
+body.dark-mode #rp-root .rp-more{ background: rgba(20,20,20,0.65); }
 @media(max-width: 900px){
-  #rp3-root .rp-more{ display:none !important; }
+  #rp-root .rp-more{ display:none !important; }
 }
 
 /* Share button on photo */
-#rp3-root .rp-comment-btn{
+#rp-root .rp-comment-btn{
   position:absolute;
   left: 10px;
   bottom: 10px;
@@ -715,22 +716,21 @@ body.dark-mode #rp3-root .rp-more{ background: rgba(20,20,20,0.65); }
   transition: opacity 180ms ease, transform 180ms ease;
   user-select: none;
 }
-body.dark-mode #rp3-root .rp-comment-btn{
+body.dark-mode #rp-root .rp-comment-btn{
   background: rgba(20,20,20,0.70);
   color: rgba(255,255,255,0.90);
 }
-#rp3-root .rp-photo:hover .rp-comment-btn,
-#rp3-root .rp-photo:focus-within .rp-comment-btn{
+#rp-root .rp-photo:hover .rp-comment-btn,
+#rp-root .rp-photo:focus-within .rp-comment-btn{
   opacity: 1;
   transform: translateY(0);
 }
 @media (max-width: 900px){
-  #rp3-root .rp-comment-btn{ opacity: 1; transform: translateY(0); }
+  #rp-root .rp-comment-btn{ opacity: 1; transform: translateY(0); }
 }
 
 /* =========================================================
-   TAB 4 CSS (Visualization) — from your “um-stage” block
-   NOTE: if you want this scoped, prefix selectors with #um4-root
+   TAB 4 CSS (Visualization)
 ========================================================= */
 .um-stage{
   width: 100%;
@@ -815,3 +815,4 @@ body.dark-mode #rp3-root .rp-comment-btn{
   color: rgba(20,20,20,0.55);
   letter-spacing: .2px;
 }
+
