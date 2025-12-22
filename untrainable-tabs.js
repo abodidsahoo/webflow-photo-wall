@@ -1,4 +1,3 @@
-
 (() => {
   /* =========================================================
      UNTRAINABLE — SINGLE FINAL JS BLOCK (Tabs 1–4)
@@ -321,7 +320,9 @@
 
   /* =========================================================
      TAB 2 — Add Responses (init once)
-     (Uses your t2-* IDs; exits safely if Tab 2 HTML not present)
+     FIXES:
+       ✅ Allows either full Tab2 HTML OR a simple mount point (#t2-root)
+       ✅ Ensures .wf-comment-btn positions correctly (frame is relative)
   ========================================================= */
   let __TAB2_INITED__ = false;
 
@@ -330,11 +331,86 @@
     __TAB2_INITED__ = true;
 
     applySavedThemeDarkMode();
-
-    const wall = document.getElementById("t2-wf-wall-inner");
-    if (!wall) return; // Tab 2 HTML not present on this page
-
     await ensureSupabase();
+
+    // ---- Where should Tab2 render? ----
+    // If you already have full Tab2 HTML with #t2-wf-wall-inner, use it.
+    // Otherwise, we will auto-build the Tab2 wall inside #t2-root.
+    let wall = document.getElementById("t2-wf-wall-inner");
+    let rootMount = document.getElementById("t2-root");
+
+    const hasFullTab2HTML = !!wall;
+
+    if (!hasFullTab2HTML) {
+      if (!rootMount) return; // No Tab2 mount point at all
+      // Build Tab2 shell inside #t2-root (no changes to Tab1/Tab4)
+      rootMount.innerHTML = `
+        <div id="t2-wf-photo-wall" class="wf-wall">
+          <div class="wf-theme-toggle-wrapper">
+            <button id="t2-theme-toggle" class="wf-theme-btn" aria-label="Toggle theme" type="button">
+              <span class="wf-theme-option t2-wf-light-opt active">Light</span>
+              <span class="wf-theme-option t2-wf-dark-opt">Dark</span>
+            </button>
+          </div>
+
+          <div class="wf-bottom-controls">
+            <button id="t2-go-to-top" class="wf-goto-btn" aria-label="Go to top" type="button">
+              <span class="wf-goto-text">Go to top</span>
+            </button>
+            <button id="t2-load-more" class="wf-loadmore-btn" aria-label="Load more photos" type="button">
+              <span class="wf-loadmore-text">I'm loving them! Load more photos!</span>
+            </button>
+          </div>
+
+          <div class="wf-wall-inner" id="t2-wf-wall-inner"></div>
+
+          <div class="wf-loading" id="t2-wf-loading" aria-live="polite" aria-busy="false">
+            <div class="wf-loading-pill">
+              <span class="wf-loading-dot"></span>
+              <span>Photographs loading</span>
+            </div>
+          </div>
+
+          <div id="t2-wf-sentinel" class="wf-sentinel"></div>
+        </div>
+
+        <div class="wf-modal" id="t2-wf-modal" aria-hidden="true">
+          <div class="wf-modal-backdrop" id="t2-wf-modal-backdrop"></div>
+          <div class="wf-modal-card" role="dialog" aria-modal="true" aria-labelledby="t2-wf-modal-title">
+            <button class="wf-modal-close" id="t2-wf-modal-close" type="button" aria-label="Close">✕</button>
+
+            <div class="wf-modal-head">
+              <div class="wf-modal-title" id="t2-wf-modal-title">What does this photograph make you feel?</div>
+              <div class="wf-modal-sub">Your response will be saved with this photograph’s URL for research.</div>
+            </div>
+
+            <div class="wf-modal-preview">
+              <img id="t2-wf-modal-img" alt="" />
+            </div>
+
+            <form class="wf-modal-form" id="t2-wf-modal-form">
+              <label class="wf-field">
+                <span class="wf-label">Name (optional)</span>
+                <input id="t2-wf-name" type="text" class="wf-input" placeholder="Your name" maxlength="80" />
+              </label>
+
+              <label class="wf-field">
+                <span class="wf-label">What do you feel?</span>
+                <textarea id="t2-wf-feel" class="wf-textarea" placeholder="Write in a few words…" maxlength="500" required></textarea>
+              </label>
+
+              <div class="wf-actions">
+                <button id="t2-wf-submit" type="submit" class="wf-submit">Submit</button>
+                <div class="wf-status" id="t2-wf-status" aria-live="polite"></div>
+              </div>
+            </form>
+          </div>
+        </div>
+      `;
+      wall = document.getElementById("t2-wf-wall-inner");
+    }
+
+    if (!wall) return;
 
     // Theme toggle (Tab 2)
     const themeToggle = document.getElementById("t2-theme-toggle");
@@ -527,6 +603,9 @@
         const frame = document.createElement("div");
         frame.className = "wf-frame";
 
+        // ✅ CRITICAL FIX: the overlay button is absolute; the frame must be positioned.
+        frame.style.position = "relative";
+
         const eager = hero && i === 0;
         frame.appendChild(makeImg(urls[i], { eager }));
 
@@ -683,11 +762,11 @@
   };
 
   /* =========================================================
-     TAB 3 — Research Responses (YOUR PROVIDED CODE, embedded)
-     HTML IDs expected (exactly as you pasted):
-     #rp-root #rp-theme-btn #rp-status #rp-feed
-     #wf-modal #wf-modal-backdrop #wf-modal-close #wf-modal-img
-     #wf-modal-form #wf-name #wf-feel #wf-submit #wf-status
+     TAB 3 — Research Responses
+     FIXES:
+       ✅ IDs now match your HTML:
+          #rp3-root #rp3-theme-btn #rp3-status #rp3-feed
+          #rp3-wf-modal ... (all rp3-wf-* ids)
   ========================================================= */
   let __TAB3_INITED__ = false;
 
@@ -695,16 +774,16 @@
     if (__TAB3_INITED__) return;
     __TAB3_INITED__ = true;
 
-    const root = document.getElementById("rp-root");
+    const root = document.getElementById("rp3-root");
     if (!root) return;
 
     await ensureSupabase();
 
     /* =========================
        THEME (kept working)
-       + also sync with body.dark-mode for consistency
+       + sync with body.dark-mode
     ========================= */
-    const themeBtn = document.getElementById("rp-theme-btn");
+    const themeBtn = document.getElementById("rp3-theme-btn");
     if (!themeBtn) return;
 
     const lightOpt = themeBtn.querySelector(".rp-theme-light");
@@ -714,7 +793,6 @@
       document.body.classList.remove("rp-theme-light","rp-theme-dark");
       document.body.classList.add(mode === "dark" ? "rp-theme-dark" : "rp-theme-light");
 
-      // sync to shared dark-mode (so other tabs remain consistent)
       document.body.classList.toggle("dark-mode", mode === "dark");
       try { localStorage.setItem("theme", mode === "dark" ? "dark" : "light"); } catch(e){}
 
@@ -727,14 +805,11 @@
 
     const boot = (function(){
       try {
-        // prefer shared theme if set
         const shared = localStorage.getItem("theme");
         if (shared === "dark") return "dark";
         if (shared === "light") return "light";
       } catch(e){}
-      try {
-        return localStorage.getItem("rp-theme") || "light";
-      } catch(e){}
+      try { return localStorage.getItem("rp-theme") || "light"; } catch(e){}
       return "light";
     })();
 
@@ -755,8 +830,8 @@
     const supa = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     const TABLE = "photo_feedback";
 
-    const feed = document.getElementById("rp-feed");
-    const status = document.getElementById("rp-status");
+    const feed = document.getElementById("rp3-feed");
+    const status = document.getElementById("rp3-status");
 
     const PASTELS = ["#f7f2ea","#f3f0ea","#f2f4ff","#f4f7f2","#f8f1f6","#f6f3ff","#f5f6f7","#f3efe8"];
     const rand = (min,max)=> min + Math.random()*(max-min);
@@ -773,17 +848,17 @@
     }
 
     /* =========================
-       MODAL LOGIC
+       MODAL LOGIC (Tab 3 ids)
     ========================= */
-    const modal = document.getElementById("wf-modal");
-    const modalBackdrop = document.getElementById("wf-modal-backdrop");
-    const modalClose = document.getElementById("wf-modal-close");
-    const modalImg = document.getElementById("wf-modal-img");
-    const form = document.getElementById("wf-modal-form");
-    const nameEl = document.getElementById("wf-name");
-    const feelEl = document.getElementById("wf-feel");
-    const submitBtn = document.getElementById("wf-submit");
-    const statusEl = document.getElementById("wf-status");
+    const modal = document.getElementById("rp3-wf-modal");
+    const modalBackdrop = document.getElementById("rp3-wf-modal-backdrop");
+    const modalClose = document.getElementById("rp3-wf-modal-close");
+    const modalImg = document.getElementById("rp3-wf-modal-img");
+    const form = document.getElementById("rp3-wf-modal-form");
+    const nameEl = document.getElementById("rp3-wf-name");
+    const feelEl = document.getElementById("rp3-wf-feel");
+    const submitBtn = document.getElementById("rp3-wf-submit");
+    const statusEl = document.getElementById("rp3-wf-status");
 
     (function setupKeyboardSafeModal(){
       if (!window.visualViewport || !modal) return;
@@ -1672,8 +1747,6 @@
   function initTabs() {
     const root = document.getElementById("um-root");
     if (!root) {
-      // If you don’t have a custom controller and Webflow tabs handle display,
-      // we still try a safe "init what exists" on load:
       window.__initPhotoGridOnce?.();
       window.__initTab2Once?.();
       window.__initRp3Once?.();
@@ -1709,4 +1782,5 @@
     initTabs();
   }
 })();
+
 
