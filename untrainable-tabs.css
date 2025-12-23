@@ -12,11 +12,18 @@
 .um-tabs{
   display:flex;
   align-items:center;
-  justify-content:space-between;
+  justify-content:flex-start;
   gap:12px;
   flex-wrap:wrap;
   margin-bottom:16px;
 }
+
+@media (min-width: 768px){
+  .um-tabs{
+    justify-content:center;
+  }
+}
+
 
 .um-tabs-left{
   display:flex;
@@ -34,7 +41,7 @@
   }
 }
 
-}
+
 
 .um-tabs-right{
   display:flex;
