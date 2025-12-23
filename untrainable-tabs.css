@@ -35,7 +35,7 @@
 
 /* Tab buttons unchanged */
 .um-tab{
-  height: var(--tabControlH);
+  height: var(--tabH);
   padding: 0 14px;                 /* horizontal only */
   display: inline-flex;
   align-items: center;
@@ -103,7 +103,7 @@
   --overlayBtnText: rgba(0,0,0,0.82);
    
   --tabControlH: 36px; /* exact visual height of tab buttons */
-
+  --tabH: 36px;
 }
 body{
   background: var(--bg);
@@ -138,11 +138,11 @@ body.dark-mode{
 
 /* Theme toggle aligned with tabs */
 .um-tabs-right .wf-theme-btn{
-  height: var(--tabControlH);
+  height: var(--tabH);
   padding: 0 4px;
 
   display:inline-flex;
-  align-items:center;
+  align-items:stretch;
   justify-content:center;
 
   border-radius:6px;
@@ -153,7 +153,7 @@ body.dark-mode{
 
 }
 .um-tabs-right .wf-theme-option{
-  height: calc(var(--tabControlH) - 8px);
+  height: 100%;  
   display:inline-flex;
   align-items:center;
   justify-content:center;
