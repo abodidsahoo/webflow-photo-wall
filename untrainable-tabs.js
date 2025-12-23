@@ -1552,3 +1552,80 @@
     if (tries >= 40) clearInterval(timer); // ~12 seconds
   }, 300);
 })();
+
+
+
+
+
+
+
+
+<script>
+(() => {
+  const panel = document.querySelector('.um-panel[data-panel="t2"]');
+  if (!panel) return;
+
+  const isTouch = window.matchMedia("(hover: none)").matches;
+
+  function styleOverlayButton(btn) {
+    // Force overlay layout even if CSS is missing/overridden
+    btn.style.position = "absolute";
+    btn.style.left = "10px";
+    btn.style.bottom = "10px";
+    btn.style.zIndex = "999999";
+    btn.style.display = "inline-flex";
+    btn.style.alignItems = "center";
+    btn.style.justifyContent = "center";
+    btn.style.borderRadius = "999px";
+    btn.style.padding = "8px 10px";
+    btn.style.border = "1px solid rgba(0,0,0,0.12)";
+    btn.style.background = "rgba(255,255,255,0.82)";
+    btn.style.backdropFilter = "blur(12px)";
+    btn.style.webkitBackdropFilter = "blur(12px)";
+    btn.style.font = '600 12px/1 system-ui, -apple-system, "Segoe UI", sans-serif';
+    btn.style.cursor = "pointer";
+    btn.style.pointerEvents = "auto";
+    btn.style.transition = "opacity 180ms ease, transform 180ms ease";
+
+    // Hover-only on desktop, always visible on touch
+    if (isTouch) {
+      btn.style.opacity = "1";
+      btn.style.transform = "translateY(0)";
+    } else {
+      btn.style.opacity = "0";
+      btn.style.transform = "translateY(6px)";
+    }
+  }
+
+  function fixTab2Buttons() {
+    const wall = panel.querySelector("#t2-wf-wall-inner");
+    if (!wall) return;
+
+    wall.querySelectorAll(".wf-frame").forEach(frame => {
+      frame.style.position = "relative"; // anchor absolute buttons
+      const btn = frame.querySelector(".wf-comment-btn");
+      if (!btn) return;
+
+      styleOverlayButton(btn);
+
+      // JS hover fallback (doesn't depend on CSS)
+      if (!isTouch) {
+        frame.onmouseenter = () => {
+          btn.style.opacity = "1";
+          btn.style.transform = "translateY(0)";
+        };
+        frame.onmouseleave = () => {
+          btn.style.opacity = "0";
+          btn.style.transform = "translateY(6px)";
+        };
+      }
+    });
+  }
+
+  // Run now + whenever new blocks append
+  fixTab2Buttons();
+  const wall = panel.querySelector("#t2-wf-wall-inner") || panel;
+  new MutationObserver(fixTab2Buttons).observe(wall, { childList: true, subtree: true });
+})();
+</script>
+
