@@ -450,6 +450,160 @@
     return { open, close };
   }
 
+
+
+
+  /* ===== TAB 2: FORCE ADD "Share your feeling" ON EVERY IMAGE (guaranteed) ===== */
+(() => {
+  const WALL_SELECTOR = '#t2-wf-wall-inner, [data-panel="t2"] .wf-wall-inner';
+  const BTN_TEXT = "💭 Share your feeling";
+
+  function getModalEls() {
+    const modal = document.getElementById("t2-wf-modal");
+    if (!modal) return null;
+
+    return {
+      modal,
+      backdrop: document.getElementById("t2-wf-modal-backdrop"),
+      closeBtn: document.getElementById("t2-wf-modal-close"),
+      img: document.getElementById("t2-wf-modal-img"),
+      status: document.getElementById("t2-wf-status"),
+      name: document.getElementById("t2-wf-name"),
+      feel: document.getElementById("t2-wf-feel"),
+    };
+  }
+
+  function openModal(url) {
+    const els = getModalEls();
+    if (!els) {
+      console.warn("Tab2 modal not found (t2-wf-modal).");
+      return;
+    }
+    els.img.src = url;
+    els.img.alt = "";
+    if (els.status) els.status.textContent = "";
+    if (els.name) els.name.value = "";
+    if (els.feel) els.feel.value = "";
+
+    els.modal.classList.add("is-open");
+    els.modal.setAttribute("aria-hidden", "false");
+    setTimeout(() => els.feel && els.feel.focus(), 0);
+  }
+
+  function closeModal() {
+    const els = getModalEls();
+    if (!els) return;
+    els.modal.classList.remove("is-open");
+    els.modal.setAttribute("aria-hidden", "true");
+  }
+
+  function bindModalCloseOnce() {
+    const els = getModalEls();
+    if (!els || els.modal.dataset.bound === "1") return;
+    els.modal.dataset.bound = "1";
+
+    els.backdrop && els.backdrop.addEventListener("click", closeModal);
+    els.closeBtn && els.closeBtn.addEventListener("click", closeModal);
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") closeModal();
+    });
+  }
+
+  function ensureButtons() {
+    const wall = document.querySelector(WALL_SELECTOR);
+    if (!wall) return false;
+
+    bindModalCloseOnce();
+
+    const frames = wall.querySelectorAll(".wf-frame");
+    if (!frames.length) return false;
+
+    frames.forEach((frame) => {
+      // Make sure positioning works even if CSS got overridden
+      frame.style.position = "relative";
+
+      // If already exists, hard-force it visible (in case CSS hid it)
+      let btn = frame.querySelector(".wf-comment-btn");
+      if (btn) {
+        btn.style.opacity = "1";
+        btn.style.transform = "none";
+        btn.style.pointerEvents = "auto";
+        btn.style.zIndex = "99999";
+        return;
+      }
+
+      // Find the image URL inside the frame
+      const img = frame.querySelector("img");
+      if (!img) return;
+      const url = img.currentSrc || img.src;
+      if (!url) return;
+
+      // Create the button
+      btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "wf-comment-btn";
+      btn.textContent = BTN_TEXT;
+
+      // ✅ INLINE STYLES = cannot be hidden by your stylesheet
+      btn.style.position = "absolute";
+      btn.style.left = "10px";
+      btn.style.bottom = "10px";
+      btn.style.zIndex = "99999";
+      btn.style.opacity = "1";
+      btn.style.transform = "none";
+      btn.style.pointerEvents = "auto";
+      btn.style.borderRadius = "999px";
+      btn.style.padding = "8px 10px";
+      btn.style.border = "1px solid rgba(0,0,0,0.12)";
+      btn.style.background = "rgba(255,255,255,0.82)";
+      btn.style.backdropFilter = "blur(12px)";
+      btn.style.webkitBackdropFilter = "blur(12px)";
+      btn.style.font = '600 12px/1 system-ui, -apple-system, "Segoe UI", sans-serif';
+
+      btn.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        openModal(url);
+      });
+
+      frame.appendChild(btn);
+    });
+
+    return true;
+  }
+
+  // Run now, and keep forcing it (handles infinite scroll + tab switching)
+  const run = () => ensureButtons();
+
+  // Try immediately
+  run();
+
+  // Keep trying briefly for late renders
+  let tries = 0;
+  const timer = setInterval(() => {
+    run();
+    tries += 1;
+    if (tries >= 30) clearInterval(timer); // ~9s max
+  }, 300);
+
+  // Mutation observer for new blocks appended
+  const wall = document.querySelector(WALL_SELECTOR);
+  if (wall) {
+    const mo = new MutationObserver(run);
+    mo.observe(wall, { childList: true, subtree: true });
+  }
+
+  // Also retry whenever Tab2 is clicked/shown
+  document.addEventListener("click", (e) => {
+    const t = e.target;
+    if (t && t.closest && t.closest('[data-tab="t2"]')) run();
+  });
+})();
+
+
+
+
+  
   /* ===========================
      TAB 3 (Responses)
   ============================ */
