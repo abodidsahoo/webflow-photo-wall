@@ -69,22 +69,45 @@
      THEME
   ============================ */
   function applyThemeFromStorage() {
-    const saved = (() => {
-      try { return localStorage.getItem("theme"); } catch { return null; }
-    })();
-    const isDark = saved === "dark";
-    document.body.classList.toggle("dark-mode", isDark);
-    return isDark;
-  }
+  const saved = (() => {
+    try { return localStorage.getItem("theme"); } catch { return null; }
+  })();
 
-  function setTheme(isDark) {
-    document.body.classList.toggle("dark-mode", isDark);
-    try { localStorage.setItem("theme", isDark ? "dark" : "light"); } catch {}
-  }
+  const isDark = saved === "dark";
+
+  // Apply to all likely theme roots (covers CSS that targets html, body, or containers)
+  document.body.classList.toggle("dark-mode", isDark);
+  document.documentElement.classList.toggle("dark-mode", isDark);
+  document.getElementById("um-root")?.classList.toggle("dark-mode", isDark);
+
+  document.querySelectorAll(".wf-wall, .wf-wall-inner, .rp-root, .um-root").forEach((el) => {
+    el.classList.toggle("dark-mode", isDark);
+  });
+
+  return isDark;
+}
+
+
+ function setTheme(isDark) {
+  document.body.classList.toggle("dark-mode", isDark);
+  document.documentElement.classList.toggle("dark-mode", isDark);
+  document.getElementById("um-root")?.classList.toggle("dark-mode", isDark);
+
+  document.querySelectorAll(".wf-wall, .wf-wall-inner, .rp-root, .um-root").forEach((el) => {
+    el.classList.toggle("dark-mode", isDark);
+  });
+
+  try { localStorage.setItem("theme", isDark ? "dark" : "light"); } catch {}
+}
+
 
   function setupThemeToggle(btnId, lightSel, darkSel) {
     const btn = document.getElementById(btnId);
     if (!btn) return;
+
+    // prevent double-binding
+if (btn.dataset.themeBound === "1") return { sync: () => {} };
+btn.dataset.themeBound = "1";
 
     const lightOpt = btn.querySelector(lightSel);
     const darkOpt = btn.querySelector(darkSel);
@@ -909,7 +932,7 @@
 
     const isDark = applyThemeFromStorage();
     themeSyncers = themeSyncers.filter(Boolean);
-    themeSyncers.push(setupThemeToggle("t1-theme-toggle", ".wf-light-opt", ".wf-dark-opt"));
+    themeSyncers.push(setupThemeToggle("global-theme-toggle", ".wf-light-opt", ".wf-dark-opt"));
     if (isDark) syncAllThemeButtons();
 
     window.T1_WALL = createPhotoWallController({
@@ -1101,12 +1124,9 @@ document.addEventListener("click", (e) => {
   /* ===========================
      BOOT
   ============================ */
- ffunction boot() {
+  function boot() {
   // Apply stored theme immediately
   applyThemeFromStorage();
-
-  // Force theme system to initialize once
-  setTheme(document.body.classList.contains("dark-mode"));
 
   // Prepare theme sync registry
   themeSyncers = themeSyncers.filter(Boolean);
