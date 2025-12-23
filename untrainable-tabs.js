@@ -928,36 +928,107 @@
     })();
   }
 
+
+
+
+  
   function initTab2Once() {
-    if (didT2) return;
-    didT2 = true;
+  if (didT2) return;
+  didT2 = true;
 
-    const isDark = applyThemeFromStorage();
-    themeSyncers = themeSyncers.filter(Boolean);
-    themeSyncers.push(setupThemeToggle("t2-theme-toggle", ".t2-wf-light-opt", ".t2-wf-dark-opt"));
-    if (isDark) syncAllThemeButtons();
+  // Apply saved theme
+  applyThemeFromStorage();
 
-    const modal = setupTab2Modal();
+  // --- HARD BIND theme toggle for Tab 2 (prevents interlink issues) ---
+  (function bindTab2Theme() {
+    const btn = document.getElementById("t2-theme-toggle");
+    if (!btn) return;
+    if (btn.dataset.bound === "1") return;
+    btn.dataset.bound = "1";
 
-    const wall = createPhotoWallController({
-      wallInnerId: "t2-wf-wall-inner",
-      loadingId: "t2-wf-loading",
-      sentinelId: "t2-wf-sentinel",
-      loadMoreId: "t2-load-more",
-      goTopId: "t2-go-to-top",
-      withCommentButton: true,
-      onComment: (url) => modal && modal.open(url)
+    const lightOpt = btn.querySelector(".t2-wf-light-opt");
+    const darkOpt  = btn.querySelector(".t2-wf-dark-opt");
+
+    const sync = () => {
+      const isDark = document.body.classList.contains("dark-mode");
+      darkOpt && darkOpt.classList.toggle("active", isDark);
+      lightOpt && lightOpt.classList.toggle("active", !isDark);
+    };
+    sync();
+
+    btn.addEventListener("click", () => {
+      const next = !document.body.classList.contains("dark-mode");
+      setTheme(next);
+      sync();
+      syncAllThemeButtons(); // keeps other tabs in sync too
     });
-    if (!wall) return;
 
-    (async () => {
-      wall.setLoading(true);
-      const images = await fetchImagesOnce();
-      wall.setLoading(false);
-      wall.resetGridWith(images);
-    })();
+    // also keep it in the global sync list
+    themeSyncers = themeSyncers.filter(Boolean);
+    themeSyncers.push({ sync });
+  })();
+
+  // Modal
+  const modal = setupTab2Modal();
+
+  // Create wall (same engine as Tab 1)
+  const wall = createPhotoWallController({
+    wallInnerId: "t2-wf-wall-inner",
+    loadingId: "t2-wf-loading",
+    sentinelId: "t2-wf-sentinel",
+    loadMoreId: "t2-load-more",
+    goTopId: "t2-go-to-top",
+    withCommentButton: true,
+    onComment: (url) => modal && modal.open(url)
+  });
+  if (!wall) return;
+
+  // --- REPAIR: ensure the "Share your feeling" button exists on every frame ---
+  function ensureTab2CommentButtons() {
+    const wallInner = document.getElementById("t2-wf-wall-inner");
+    if (!wallInner) return;
+
+    wallInner.querySelectorAll(".wf-frame").forEach((frame) => {
+      if (frame.querySelector(".wf-comment-btn")) return;
+
+      const img = frame.querySelector("img.wf-img");
+      if (!img) return;
+
+      const url = img.currentSrc || img.src;
+
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "wf-comment-btn";
+      btn.textContent = "💭 Share your feeling";
+      btn.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        modal && modal.open(url);
+      });
+
+      frame.appendChild(btn);
+    });
   }
 
+  // Observe new blocks appended by infinite scroll / load more
+  const mo = new MutationObserver(() => ensureTab2CommentButtons());
+  mo.observe(document.getElementById("t2-wf-wall-inner"), { childList: true, subtree: true });
+
+  (async () => {
+    wall.setLoading(true);
+    const images = await fetchImagesOnce();
+    wall.setLoading(false);
+    wall.resetGridWith(images);
+
+    // Run once after initial render
+    ensureTab2CommentButtons();
+  })();
+}
+
+
+
+
+  
   function initTab3Once() {
     if (didT3) return;
     didT3 = true;
