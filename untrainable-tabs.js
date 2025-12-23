@@ -918,6 +918,300 @@ btn.dataset.themeBound = "1";
     load();
   }
 
+
+/* ===========================
+   TAB 4 — Slider + Bubbles Engine
+   - Mounts UI into #t4-controls
+   - Slider is smooth (step="any") but maps to integer count
+=========================== */
+
+function createTab4SliderUI(mountEl) {
+  if (!mountEl) return null;
+
+  // prevent double-mount if Webflow re-renders
+  if (mountEl.dataset.mounted === "1") {
+    return {
+      el: mountEl.querySelector(".t4-slider-shell"),
+      range: mountEl.querySelector("input.t4-range"),
+      fill: mountEl.querySelector(".t4-slider-fill"),
+      knob: mountEl.querySelector(".t4-slider-knob"),
+      countEl: mountEl.querySelector("[data-t4-count]")
+    };
+  }
+  mountEl.dataset.mounted = "1";
+
+  mountEl.innerHTML = `
+    <div class="t4-slider-shell" aria-label="How many photographs to show">
+      <div class="t4-slider-meta">Showing <strong data-t4-count>1</strong></div>
+      <div class="t4-slider-track">
+        <div class="t4-slider-fill"></div>
+        <div class="t4-slider-knob" aria-hidden="true"></div>
+        <input class="t4-range" type="range" min="0" max="1" value="0" step="any" />
+      </div>
+    </div>
+  `;
+
+  const shell = mountEl.querySelector(".t4-slider-shell");
+  const range = mountEl.querySelector("input.t4-range");
+  const fill  = mountEl.querySelector(".t4-slider-fill");
+  const knob  = mountEl.querySelector(".t4-slider-knob");
+  const countEl = mountEl.querySelector("[data-t4-count]");
+
+  // Drag feel (adds pressed style)
+  const setDragging = (on) => shell.classList.toggle("is-dragging", !!on);
+  range.addEventListener("pointerdown", () => setDragging(true));
+  window.addEventListener("pointerup", () => setDragging(false));
+
+  return { el: shell, range, fill, knob, countEl };
+}
+
+function createTab4BubbleEngine({ stageEl }) {
+  if (!stageEl) return null;
+
+  // We create our own bubbles; don’t conflict with your existing .um-node system.
+  // (If you already use .um-node for other things, this uses .t4-bubble instead.)
+  const nodes = [];
+  let items = [];      // [{ url, count }]
+  let targetCount = 1; // integer
+  let raf = 0;
+
+  const rand = (min, max) => min + Math.random() * (max - min);
+
+  function getSize() {
+    const r = stageEl.getBoundingClientRect();
+    return { W: r.width, H: r.height };
+  }
+
+  function radiusForCount(c) {
+    const base = 24;
+    const extra = Math.min(34, Math.sqrt(Math.max(0, c)) * 6);
+    return base + extra;
+  }
+
+  function makeEl(url, r) {
+    const el = document.createElement("div");
+    el.className = "t4-bubble";
+    el.style.width = `${r * 2}px`;
+    el.style.height = `${r * 2}px`;
+    el.innerHTML = `<img src="${url}" alt="" draggable="false">`;
+    stageEl.appendChild(el);
+    return el;
+  }
+
+  function spawn(item) {
+    const { W, H } = getSize();
+    const r = radiusForCount(item.count);
+
+    // Spawn near center-ish
+    const x = W * 0.5 + rand(-70, 70);
+    const y = H * 0.22 + rand(-50, 50);
+
+    const el = makeEl(item.url, r);
+
+    return {
+      url: item.url,
+      count: item.count,
+      r,
+      x,
+      y,
+      vx: rand(-0.5, 0.5),
+      vy: rand(0.2, 0.8),
+      el
+    };
+  }
+
+  function setCount(n) {
+    targetCount = Math.max(1, Math.min(n, items.length || 1));
+
+    // add
+    while (nodes.length < targetCount) {
+      const it = items[nodes.length];
+      nodes.push(spawn(it));
+    }
+    // remove
+    while (nodes.length > targetCount) {
+      const node = nodes.pop();
+      node.el.remove();
+    }
+  }
+
+  function setItems(nextItems) {
+    items = Array.isArray(nextItems) ? nextItems.slice() : [];
+    // clamp
+    setCount(Math.min(targetCount, items.length || 1));
+  }
+
+  function tick() {
+    const { W, H } = getSize();
+    const g = 0.085;     // downward drift
+    const damp = 0.992;  // smooth settling
+    const wall = 0.82;
+
+    // integrate
+    for (const n of nodes) {
+      n.vy += g;
+      n.vx *= damp;
+      n.vy *= damp;
+
+      n.x += n.vx;
+      n.y += n.vy;
+
+      // bounds
+      if (n.x - n.r < 0) { n.x = n.r; n.vx = Math.abs(n.vx) * wall; }
+      if (n.x + n.r > W) { n.x = W - n.r; n.vx = -Math.abs(n.vx) * wall; }
+      if (n.y - n.r < 0) { n.y = n.r; n.vy = Math.abs(n.vy) * wall; }
+      if (n.y + n.r > H) { n.y = H - n.r; n.vy = -Math.abs(n.vy) * 0.55; } // weaker bottom bounce
+    }
+
+    // collisions
+    for (let i = 0; i < nodes.length; i++) {
+      for (let j = i + 1; j < nodes.length; j++) {
+        const a = nodes[i], b = nodes[j];
+        const dx = b.x - a.x;
+        const dy = b.y - a.y;
+        const dist = Math.hypot(dx, dy) || 0.0001;
+        const minD = a.r + b.r + 2;
+
+        if (dist < minD) {
+          const overlap = (minD - dist);
+          const nx = dx / dist;
+          const ny = dy / dist;
+
+          a.x -= nx * overlap * 0.5;
+          a.y -= ny * overlap * 0.5;
+          b.x += nx * overlap * 0.5;
+          b.y += ny * overlap * 0.5;
+
+          const push = overlap * 0.012;
+          a.vx -= nx * push; a.vy -= ny * push;
+          b.vx += nx * push; b.vy += ny * push;
+        }
+      }
+    }
+
+    // render
+    for (const n of nodes) {
+      n.el.style.transform = `translate(${Math.round(n.x - n.r)}px, ${Math.round(n.y - n.r)}px)`;
+    }
+
+    raf = requestAnimationFrame(tick);
+  }
+
+  function start() {
+    if (raf) cancelAnimationFrame(raf);
+    raf = requestAnimationFrame(tick);
+  }
+
+  function stop() {
+    if (raf) cancelAnimationFrame(raf);
+    raf = 0;
+  }
+
+  function destroy() {
+    stop();
+    while (nodes.length) nodes.pop().el.remove();
+    items = [];
+  }
+
+  return { setItems, setCount, start, stop, destroy, get items(){ return items; } };
+}
+
+// Loads counts per photo (sorted by most responses)
+async function fetchTab4ItemsByResponses() {
+  const supa = getSupaClient();
+  const { data, error } = await supa
+    .from(TABLE)
+    .select("image_url")
+    .limit(5000);
+
+  if (error) throw error;
+
+  const map = new Map();
+  for (const row of data || []) {
+    const url = (row.image_url || "").trim();
+    if (!url) continue;
+    map.set(url, (map.get(url) || 0) + 1);
+  }
+
+  return [...map.entries()]
+    .map(([url, count]) => ({ url, count }))
+    .sort((a, b) => b.count - a.count);
+}
+
+// Smooth slider: continuous drag, integer output
+function bindTab4Slider({ ui, onCountChange }) {
+  if (!ui || !ui.range) return { setMax: () => {}, setValueFromCount: () => {} };
+
+  let maxCount = 1;
+  let target01 = 0;       // 0..1 (from input)
+  let visual01 = 0;       // lerped for buttery knob
+  let raf = 0;
+
+  function clamp01(x){ return Math.max(0, Math.min(1, x)); }
+
+  function countFrom01(t) {
+    // Map 0..1 -> 1..maxCount (integer)
+    const raw = 1 + t * (maxCount - 1);
+    return Math.max(1, Math.min(maxCount, Math.round(raw)));
+  }
+
+  function render() {
+    // smooth animation
+    visual01 += (target01 - visual01) * 0.22;
+
+    const pct = (visual01 * 100);
+    ui.fill.style.width = `${pct}%`;
+    ui.knob.style.left = `${pct}%`;
+
+    // update label using snapped integer (based on target)
+    const count = countFrom01(target01);
+    if (ui.countEl) ui.countEl.textContent = String(count);
+
+    raf = requestAnimationFrame(render);
+  }
+
+  function onInput() {
+    const v = parseFloat(ui.range.value || "0");
+    target01 = clamp01(v);
+    const count = countFrom01(target01);
+    onCountChange && onCountChange(count);
+  }
+
+  ui.range.addEventListener("input", onInput);
+
+  // start loop
+  if (raf) cancelAnimationFrame(raf);
+  raf = requestAnimationFrame(render);
+
+  return {
+    setMax(n) {
+      maxCount = Math.max(1, n | 0);
+      // keep range 0..1
+      ui.range.min = "0";
+      ui.range.max = "1";
+      ui.range.step = "any";
+      // clamp current
+      onInput();
+    },
+    setValueFromCount(count) {
+      const c = Math.max(1, Math.min(maxCount, count | 0));
+      const t = maxCount === 1 ? 0 : (c - 1) / (maxCount - 1);
+      target01 = t;
+      ui.range.value = String(t);
+      const snapped = countFrom01(target01);
+      if (ui.countEl) ui.countEl.textContent = String(snapped);
+      onCountChange && onCountChange(snapped);
+    },
+    destroy() {
+      if (raf) cancelAnimationFrame(raf);
+      raf = 0;
+    }
+  };
+}
+
+
+
+  
   /* ===========================
      TAB INIT (ONCE)
   ============================ */
@@ -1033,14 +1327,58 @@ if (!wall) return;
   }
 
   function initTab4Once() {
-    if (didT4) return;
-    didT4 = true;
+  if (didT4) return;
+  didT4 = true;
 
-    const stage = document.getElementById("um-stage");
-    const notesLayer = document.getElementById("um-notes");
-    if (!stage || !notesLayer) return;
-    // Tab 4 intentionally left alone (your working viz can live elsewhere).
-  }
+  const stage = document.getElementById("um-stage");
+  const mount = document.getElementById("t4-controls");
+  if (!stage || !mount) return;
+
+  // Build UI
+  const ui = createTab4SliderUI(mount);
+
+  // Build bubbles
+  const engine = createTab4BubbleEngine({ stageEl: stage });
+  if (!ui || !engine) return;
+
+  // Expose for your global button ("Expand view")
+  window.expandVisualization = () => {
+    const max = engine.items?.length || 1;
+    // jump to max (show all)
+    slider.setValueFromCount(max);
+  };
+
+  // Load data + bind slider
+  let slider = null;
+
+  (async () => {
+    try {
+      // 1) Load response counts per photo
+      const items = await fetchTab4ItemsByResponses();
+
+      // 2) Configure engine
+      engine.setItems(items);
+      engine.start();
+
+      // 3) Bind slider (max = total items)
+      slider = bindTab4Slider({
+        ui,
+        onCountChange: (count) => engine.setCount(count)
+      });
+      slider.setMax(items.length || 1);
+
+      // 4) Start with a nice default (e.g. 12 or all if fewer)
+      const startCount = Math.min(12, items.length || 1);
+      slider.setValueFromCount(startCount);
+
+    } catch (e) {
+      console.warn("[Tab4] Failed to init visualization:", e);
+      // show a tiny hint in the slider area (optional)
+      if (mount) mount.innerHTML = `<div class="t4-slider-shell"><div class="t4-slider-meta">Failed to load visualization</div></div>`;
+    }
+  })();
+}
+
 
 
 
