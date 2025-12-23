@@ -744,16 +744,27 @@ body.dark-mode #rp3-root .rp-comment-btn{
 }
 
 /* The mount point you added in HTML */
+/* Mount point for Tab 4 slider */
 #t4-controls.t4-controls{
-  position: sticky;             /* follows as you scroll within long stage */
-  left: 0;
-  right: 0;
+  position: fixed;               /* ✅ always bottom of viewport */
+  left: 50%;
   bottom: 18px;
-  margin: 0 auto;
+  transform: translateX(-50%);
   width: min(760px, calc(100% - 28px));
-  z-index: 80;
-  pointer-events: none;         /* container ignores clicks */
+  z-index: 220;                  /* above content, below modal (250) */
+  pointer-events: none;          /* container ignores clicks */
 }
+
+/* Only show it when Tab 4 is active */
+.um-panel[data-panel="t4"] #t4-controls{ display: block; }
+.um-panel:not(.is-active) #t4-controls{ display: none; }
+.um-panel.is-active:not([data-panel="t4"]) #t4-controls{ display: none; }
+
+
+ @media (max-width: 767px){
+  #t4-controls.t4-controls{ bottom: 76px; } /* leaves space for floating buttons */
+}
+
 
 /* The visible creamy container */
 #t4-controls .t4-slider-shell{
