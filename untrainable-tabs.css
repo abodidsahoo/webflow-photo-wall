@@ -33,6 +33,29 @@
   flex: 0 0 auto;
 }
 
+
+
+.um-global-controls{
+  position: fixed;
+  right: 16px;
+  bottom: 20px;
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: flex-end;
+}
+
+@media (max-width: 767px){
+  .um-global-controls{
+    right: 12px;
+    bottom: 16px;
+  }
+}
+
+
+
+
 /* Tab buttons unchanged */
 .um-tab{
   height: var(--tabH);
