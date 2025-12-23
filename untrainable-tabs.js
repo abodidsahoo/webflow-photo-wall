@@ -1163,11 +1163,23 @@ document.getElementById("global-load-more")?.addEventListener("click", () => {
   /* ===========================
      BOOT
   ============================ */
-  function boot() {
-    applyThemeFromStorage();
-    themeSyncers = themeSyncers.filter(Boolean);
-    setupTabs();
-  }
+ function boot() {
+  // Apply stored theme immediately
+  applyThemeFromStorage();
+
+  // 🔑 Force theme system to initialize once
+  setTheme(document.body.classList.contains("dark-mode"));
+
+  // Prepare theme sync registry
+  themeSyncers = themeSyncers.filter(Boolean);
+
+  // Init tabs
+  setupTabs();
+
+  // 🔁 Sync all theme buttons once DOM is ready
+  setTimeout(syncAllThemeButtons, 0);
+}
+
 
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", boot);
