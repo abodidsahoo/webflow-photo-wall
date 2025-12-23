@@ -920,295 +920,287 @@ btn.dataset.themeBound = "1";
 
 
 /* ===========================
-   TAB 4 — Slider + Bubbles Engine
-   - Mounts UI into #t4-controls
-   - Slider is smooth (step="any") but maps to integer count
+   TAB 4: VISUALIZATION + SLIDER
 =========================== */
+function initTab4Visualization({ stage, controlsMount }) {
+  // --- state ---
+  const state = {
+    ready: false,
+    items: [],          // [{ url, count }]
+    targetCount: 12,
+    bubbles: new Map(), // url -> bubbleObj
+    rafId: 0,
+    lastT: 0
+  };
 
-function createTab4SliderUI(mountEl) {
-  if (!mountEl) return null;
+  // 1) Inject slider UI into #t4-controls (works even if CSS isn't applying)
+  function mountSliderUI() {
+    controlsMount.innerHTML = `
+      <div class="t4-slider-shell" style="
+        pointer-events:auto; display:flex; align-items:center; gap:12px;
+        padding:12px 14px; border-radius:16px;
+        background:rgba(247,243,236,0.95);
+        border:1px solid rgba(0,0,0,0.12);
+        box-shadow:0 10px 26px rgba(0,0,0,0.16);
+      ">
+        <div class="t4-slider-meta" style="
+          font-weight:800; font-size:13px; color:rgba(20,20,20,0.75); white-space:nowrap;
+        ">
+          Photos <strong id="t4-count-label" style="font-weight:900; color:rgba(20,20,20,0.92)">--</strong>
+        </div>
 
-  // prevent double-mount if Webflow re-renders
-  if (mountEl.dataset.mounted === "1") {
-    return {
-      el: mountEl.querySelector(".t4-slider-shell"),
-      range: mountEl.querySelector("input.t4-range"),
-      fill: mountEl.querySelector(".t4-slider-fill"),
-      knob: mountEl.querySelector(".t4-slider-knob"),
-      countEl: mountEl.querySelector("[data-t4-count]")
-    };
-  }
-  mountEl.dataset.mounted = "1";
+        <div class="t4-slider-track" style="
+          position:relative; flex:1 1 auto; height:14px; border-radius:999px;
+          background:rgba(0,0,0,0.10);
+          box-shadow:inset 0 2px 4px rgba(0,0,0,0.16);
+          overflow:hidden;
+        ">
+          <div id="t4-fill" class="t4-slider-fill" style="
+            position:absolute; left:0; top:0; bottom:0; width:30%;
+            background:rgba(0,0,0,0.12);
+          "></div>
 
-  mountEl.innerHTML = `
-    <div class="t4-slider-shell" aria-label="How many photographs to show">
-      <div class="t4-slider-meta">Showing <strong data-t4-count>1</strong></div>
-      <div class="t4-slider-track">
-        <div class="t4-slider-fill"></div>
-        <div class="t4-slider-knob" aria-hidden="true"></div>
-        <input class="t4-range" type="range" min="0" max="1" value="0" step="any" />
+          <input id="t4-range" class="t4-range" type="range" min="1" max="1" value="1" step="1"
+            style="
+              position:absolute; left:0; top:50%; transform:translateY(-50%);
+              width:100%; height:44px; opacity:0; margin:0; cursor:pointer;
+            "/>
+
+          <div id="t4-knob" class="t4-slider-knob" style="
+            position:absolute; top:50%; left:30%; transform:translate(-50%,-50%);
+            width:22px; height:22px; border-radius:999px;
+            background:linear-gradient(180deg,#fff,#f3ede3);
+            border:1px solid rgba(0,0,0,0.16);
+            box-shadow:0 10px 18px rgba(0,0,0,0.20), inset 0 2px 0 rgba(255,255,255,0.85);
+          "></div>
+        </div>
       </div>
-    </div>
-  `;
+    `;
 
-  const shell = mountEl.querySelector(".t4-slider-shell");
-  const range = mountEl.querySelector("input.t4-range");
-  const fill  = mountEl.querySelector(".t4-slider-fill");
-  const knob  = mountEl.querySelector(".t4-slider-knob");
-  const countEl = mountEl.querySelector("[data-t4-count]");
-
-  // Drag feel (adds pressed style)
-  const setDragging = (on) => shell.classList.toggle("is-dragging", !!on);
-  range.addEventListener("pointerdown", () => setDragging(true));
-  window.addEventListener("pointerup", () => setDragging(false));
-
-  return { el: shell, range, fill, knob, countEl };
-}
-
-function createTab4BubbleEngine({ stageEl }) {
-  if (!stageEl) return null;
-
-  // We create our own bubbles; don’t conflict with your existing .um-node system.
-  // (If you already use .um-node for other things, this uses .t4-bubble instead.)
-  const nodes = [];
-  let items = [];      // [{ url, count }]
-  let targetCount = 1; // integer
-  let raf = 0;
-
-  const rand = (min, max) => min + Math.random() * (max - min);
-
-  function getSize() {
-    const r = stageEl.getBoundingClientRect();
-    return { W: r.width, H: r.height };
+    // Force bottom-center placement even if CSS isn't applying
+    controlsMount.style.position = "fixed";
+    controlsMount.style.left = "50%";
+    controlsMount.style.bottom = "18px";
+    controlsMount.style.transform = "translateX(-50%)";
+    controlsMount.style.width = "min(760px, calc(100% - 28px))";
+    controlsMount.style.zIndex = "220";
+    controlsMount.style.pointerEvents = "none";
   }
 
-  function radiusForCount(c) {
-    const base = 24;
-    const extra = Math.min(34, Math.sqrt(Math.max(0, c)) * 6);
-    return base + extra;
+  function syncSliderUI() {
+    const label = document.getElementById("t4-count-label");
+    const range = document.getElementById("t4-range");
+    const fill  = document.getElementById("t4-fill");
+    const knob  = document.getElementById("t4-knob");
+    if (!label || !range || !fill || !knob) return;
+
+    label.textContent = String(state.targetCount);
+
+    const min = +range.min;
+    const max = +range.max;
+    const val = +range.value;
+    const pct = max <= min ? 0 : (val - min) / (max - min);
+    const leftPct = (pct * 100);
+
+    fill.style.width = `${leftPct}%`;
+    knob.style.left = `${leftPct}%`;
   }
 
-  function makeEl(url, r) {
+  // 2) Fetch & rank images by response count
+  async function loadCounts() {
+    const supa = getSupaClient();
+
+    // Pull up to 5000 responses and count in JS (simple + reliable)
+    const { data, error } = await supa
+      .from(TABLE)
+      .select("image_url,created_at")
+      .order("created_at", { ascending: false })
+      .limit(5000);
+
+    if (error) throw error;
+
+    const m = new Map();
+    (data || []).forEach((r) => {
+      const url = (r.image_url || "").trim();
+      if (!url) return;
+      m.set(url, (m.get(url) || 0) + 1);
+    });
+
+    const items = [...m.entries()]
+      .map(([url, count]) => ({ url, count }))
+      .sort((a, b) => b.count - a.count);
+
+    return items;
+  }
+
+  // 3) Bubble engine (simple float + gentle downward drift)
+  function makeBubble(url, size) {
     const el = document.createElement("div");
     el.className = "t4-bubble";
-    el.style.width = `${r * 2}px`;
-    el.style.height = `${r * 2}px`;
-    el.innerHTML = `<img src="${url}" alt="" draggable="false">`;
-    stageEl.appendChild(el);
-    return el;
-  }
+    el.style.width = `${size}px`;
+    el.style.height = `${size}px`;
+    el.style.borderRadius = "999px";
+    el.style.overflow = "hidden";
+    el.style.position = "absolute";
+    el.style.left = `${Math.random() * Math.max(20, stage.clientWidth - size)}px`;
+    el.style.top  = `${Math.random() * 60 + 20}px`; // start near top
+    el.style.boxShadow = "0 10px 24px rgba(0,0,0,0.18)";
+    el.style.willChange = "transform";
 
-  function spawn(item) {
-    const { W, H } = getSize();
-    const r = radiusForCount(item.count);
+    const img = document.createElement("img");
+    img.src = url;
+    img.alt = "";
+    img.style.width = "100%";
+    img.style.height = "100%";
+    img.style.objectFit = "cover";
+    img.style.display = "block";
+    img.draggable = false;
 
-    // Spawn near center-ish
-    const x = W * 0.5 + rand(-70, 70);
-    const y = H * 0.22 + rand(-50, 50);
+    el.appendChild(img);
+    stage.appendChild(el);
 
-    const el = makeEl(item.url, r);
+    const vx = (Math.random() * 2 - 1) * 18;
+    const vy = 22 + Math.random() * 22;
 
     return {
-      url: item.url,
-      count: item.count,
-      r,
-      x,
-      y,
-      vx: rand(-0.5, 0.5),
-      vy: rand(0.2, 0.8),
-      el
+      url,
+      el,
+      x: parseFloat(el.style.left) || 0,
+      y: parseFloat(el.style.top) || 0,
+      vx,
+      vy,
+      r: size / 2,
+      size
     };
   }
 
-  function setCount(n) {
-    targetCount = Math.max(1, Math.min(n, items.length || 1));
+  function reconcileBubbles() {
+    const desired = state.items.slice(0, state.targetCount);
+    const desiredSet = new Set(desired.map(d => d.url));
 
-    // add
-    while (nodes.length < targetCount) {
-      const it = items[nodes.length];
-      nodes.push(spawn(it));
+    // remove extras
+    for (const [url, b] of state.bubbles.entries()) {
+      if (!desiredSet.has(url)) {
+        b.el.remove();
+        state.bubbles.delete(url);
+      }
     }
-    // remove
-    while (nodes.length > targetCount) {
-      const node = nodes.pop();
-      node.el.remove();
+
+    // add missing
+    for (const d of desired) {
+      if (!state.bubbles.has(d.url)) {
+        const size = 44 + Math.min(40, Math.floor(d.count / 4)); // more responses -> slightly bigger
+        state.bubbles.set(d.url, makeBubble(d.url, size));
+      }
     }
   }
 
-  function setItems(nextItems) {
-    items = Array.isArray(nextItems) ? nextItems.slice() : [];
-    // clamp
-    setCount(Math.min(targetCount, items.length || 1));
-  }
+  function step(t) {
+    if (!state.lastT) state.lastT = t;
+    const dt = Math.min(0.05, (t - state.lastT) / 1000);
+    state.lastT = t;
 
-  function tick() {
-    const { W, H } = getSize();
-    const g = 0.085;     // downward drift
-    const damp = 0.992;  // smooth settling
-    const wall = 0.82;
+    const W = stage.clientWidth;
+    const H = stage.clientHeight;
 
-    // integrate
-    for (const n of nodes) {
-      n.vy += g;
-      n.vx *= damp;
-      n.vy *= damp;
+    const arr = [...state.bubbles.values()];
 
-      n.x += n.vx;
-      n.y += n.vy;
+    // move
+    for (const b of arr) {
+      b.x += b.vx * dt;
+      b.y += b.vy * dt;
 
-      // bounds
-      if (n.x - n.r < 0) { n.x = n.r; n.vx = Math.abs(n.vx) * wall; }
-      if (n.x + n.r > W) { n.x = W - n.r; n.vx = -Math.abs(n.vx) * wall; }
-      if (n.y - n.r < 0) { n.y = n.r; n.vy = Math.abs(n.vy) * wall; }
-      if (n.y + n.r > H) { n.y = H - n.r; n.vy = -Math.abs(n.vy) * 0.55; } // weaker bottom bounce
+      // bounce left/right
+      if (b.x < 0) { b.x = 0; b.vx *= -0.9; }
+      if (b.x > W - b.size) { b.x = W - b.size; b.vx *= -0.9; }
+
+      // if goes too far down, wrap back to top
+      if (b.y > H - 40) {
+        b.y = -b.size - Math.random() * 80;
+        b.x = Math.random() * Math.max(20, W - b.size);
+      }
     }
 
-    // collisions
-    for (let i = 0; i < nodes.length; i++) {
-      for (let j = i + 1; j < nodes.length; j++) {
-        const a = nodes[i], b = nodes[j];
-        const dx = b.x - a.x;
-        const dy = b.y - a.y;
+    // very light “push” separation to avoid clutter
+    for (let i = 0; i < arr.length; i++) {
+      for (let j = i + 1; j < arr.length; j++) {
+        const a = arr[i], c = arr[j];
+        const ax = a.x + a.r, ay = a.y + a.r;
+        const bx = c.x + c.r, by = c.y + c.r;
+        const dx = bx - ax, dy = by - ay;
         const dist = Math.hypot(dx, dy) || 0.0001;
-        const minD = a.r + b.r + 2;
-
-        if (dist < minD) {
-          const overlap = (minD - dist);
-          const nx = dx / dist;
-          const ny = dy / dist;
-
-          a.x -= nx * overlap * 0.5;
-          a.y -= ny * overlap * 0.5;
-          b.x += nx * overlap * 0.5;
-          b.y += ny * overlap * 0.5;
-
-          const push = overlap * 0.012;
-          a.vx -= nx * push; a.vy -= ny * push;
-          b.vx += nx * push; b.vy += ny * push;
+        const min = a.r + c.r + 6;
+        if (dist < min) {
+          const push = (min - dist) * 0.5;
+          const nx = dx / dist, ny = dy / dist;
+          a.x -= nx * push; a.y -= ny * push;
+          c.x += nx * push; c.y += ny * push;
         }
       }
     }
 
     // render
-    for (const n of nodes) {
-      n.el.style.transform = `translate(${Math.round(n.x - n.r)}px, ${Math.round(n.y - n.r)}px)`;
+    for (const b of arr) {
+      b.el.style.transform = `translate(${b.x}px, ${b.y}px)`;
     }
 
-    raf = requestAnimationFrame(tick);
+    state.rafId = requestAnimationFrame(step);
   }
 
-  function start() {
-    if (raf) cancelAnimationFrame(raf);
-    raf = requestAnimationFrame(tick);
+  // 4) Wire slider events
+  function bindSlider() {
+    const range = document.getElementById("t4-range");
+    const shell = controlsMount.querySelector(".t4-slider-shell");
+    if (!range) return;
+
+    range.addEventListener("input", () => {
+      state.targetCount = Math.max(1, Math.min(state.items.length, parseInt(range.value || "1", 10)));
+      reconcileBubbles();
+      syncSliderUI();
+    });
+
+    // "dragging" feel
+    range.addEventListener("pointerdown", () => shell?.classList.add("is-dragging"));
+    window.addEventListener("pointerup", () => shell?.classList.remove("is-dragging"));
   }
 
-  function stop() {
-    if (raf) cancelAnimationFrame(raf);
-    raf = 0;
-  }
+  // Boot sequence
+  (async () => {
+    mountSliderUI();
 
-  function destroy() {
-    stop();
-    while (nodes.length) nodes.pop().el.remove();
-    items = [];
-  }
+    try {
+      const items = await loadCounts();
+      state.items = items;
 
-  return { setItems, setCount, start, stop, destroy, get items(){ return items; } };
-}
+      const range = document.getElementById("t4-range");
+      if (range) {
+        range.min = "1";
+        range.max = String(Math.max(1, items.length));
+        state.targetCount = Math.min(12, Math.max(1, items.length));
+        range.value = String(state.targetCount);
+      }
 
-// Loads counts per photo (sorted by most responses)
-async function fetchTab4ItemsByResponses() {
-  const supa = getSupaClient();
-  const { data, error } = await supa
-    .from(TABLE)
-    .select("image_url")
-    .limit(5000);
+      reconcileBubbles();
+      syncSliderUI();
+      bindSlider();
 
-  if (error) throw error;
-
-  const map = new Map();
-  for (const row of data || []) {
-    const url = (row.image_url || "").trim();
-    if (!url) continue;
-    map.set(url, (map.get(url) || 0) + 1);
-  }
-
-  return [...map.entries()]
-    .map(([url, count]) => ({ url, count }))
-    .sort((a, b) => b.count - a.count);
-}
-
-// Smooth slider: continuous drag, integer output
-function bindTab4Slider({ ui, onCountChange }) {
-  if (!ui || !ui.range) return { setMax: () => {}, setValueFromCount: () => {} };
-
-  let maxCount = 1;
-  let target01 = 0;       // 0..1 (from input)
-  let visual01 = 0;       // lerped for buttery knob
-  let raf = 0;
-
-  function clamp01(x){ return Math.max(0, Math.min(1, x)); }
-
-  function countFrom01(t) {
-    // Map 0..1 -> 1..maxCount (integer)
-    const raw = 1 + t * (maxCount - 1);
-    return Math.max(1, Math.min(maxCount, Math.round(raw)));
-  }
-
-  function render() {
-    // smooth animation
-    visual01 += (target01 - visual01) * 0.22;
-
-    const pct = (visual01 * 100);
-    ui.fill.style.width = `${pct}%`;
-    ui.knob.style.left = `${pct}%`;
-
-    // update label using snapped integer (based on target)
-    const count = countFrom01(target01);
-    if (ui.countEl) ui.countEl.textContent = String(count);
-
-    raf = requestAnimationFrame(render);
-  }
-
-  function onInput() {
-    const v = parseFloat(ui.range.value || "0");
-    target01 = clamp01(v);
-    const count = countFrom01(target01);
-    onCountChange && onCountChange(count);
-  }
-
-  ui.range.addEventListener("input", onInput);
-
-  // start loop
-  if (raf) cancelAnimationFrame(raf);
-  raf = requestAnimationFrame(render);
-
-  return {
-    setMax(n) {
-      maxCount = Math.max(1, n | 0);
-      // keep range 0..1
-      ui.range.min = "0";
-      ui.range.max = "1";
-      ui.range.step = "any";
-      // clamp current
-      onInput();
-    },
-    setValueFromCount(count) {
-      const c = Math.max(1, Math.min(maxCount, count | 0));
-      const t = maxCount === 1 ? 0 : (c - 1) / (maxCount - 1);
-      target01 = t;
-      ui.range.value = String(t);
-      const snapped = countFrom01(target01);
-      if (ui.countEl) ui.countEl.textContent = String(snapped);
-      onCountChange && onCountChange(snapped);
-    },
-    destroy() {
-      if (raf) cancelAnimationFrame(raf);
-      raf = 0;
+      // start animation
+      if (state.rafId) cancelAnimationFrame(state.rafId);
+      state.rafId = requestAnimationFrame(step);
+      state.ready = true;
+    } catch (e) {
+      console.warn("[Tab4] Failed to load counts:", e);
+      // show failure message in the mount
+      controlsMount.innerHTML = `<div class="t4-slider-shell" style="padding:12px 14px;border-radius:16px;background:rgba(247,243,236,0.95);border:1px solid rgba(0,0,0,0.12);box-shadow:0 10px 26px rgba(0,0,0,0.16);font-weight:800;">Could not load visualization.</div>`;
+      // still force placement
+      controlsMount.style.position = "fixed";
+      controlsMount.style.left = "50%";
+      controlsMount.style.bottom = "18px";
+      controlsMount.style.transform = "translateX(-50%)";
+      controlsMount.style.zIndex = "220";
     }
-  };
+  })();
 }
-
 
 
   
@@ -1331,8 +1323,17 @@ if (!wall) return;
   didT4 = true;
 
   const stage = document.getElementById("um-stage");
-  const mount = document.getElementById("t4-controls");
-  if (!stage || !mount) return;
+  const notesLayer = document.getElementById("um-notes");
+  const controlsMount = document.getElementById("t4-controls");
+
+  if (!stage || !notesLayer || !controlsMount) {
+    console.warn("[Tab4] Missing elements:", { stage: !!stage, notes: !!notesLayer, controls: !!controlsMount });
+    return;
+  }
+
+  initTab4Visualization({ stage, controlsMount });
+}
+
 
   // Build UI
   const ui = createTab4SliderUI(mount);
