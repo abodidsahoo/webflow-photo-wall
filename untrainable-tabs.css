@@ -35,7 +35,12 @@
 
 /* Tab buttons unchanged */
 .um-tab{
-  padding:10px 14px;
+  height: var(--tabControlH);
+  padding: 0 14px;                 /* horizontal only */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
   font-size:12px;
   font-weight:700;
   border-radius:6px;
@@ -46,6 +51,7 @@
   transition: background .15s ease, color .15s ease;
   white-space: nowrap;
 }
+
 .um-tab:hover{ background:#000; color:#fff; }
 .um-tab.is-active{ background:#000; color:#fff; }
 
@@ -95,6 +101,9 @@
 
   --overlayBtnBg: rgba(255,255,255,0.82);
   --overlayBtnText: rgba(0,0,0,0.82);
+   
+  --tabControlH: 36px; /* exact visual height of tab buttons */
+
 }
 body{
   background: var(--bg);
@@ -127,29 +136,40 @@ body.dark-mode{
   gap: var(--gap);
 }
 
-.wf-theme-btn{
-  display:flex; align-items:center; gap:2px;
-  background: var(--btnBg);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid var(--btnBorder);
-  border-radius: 6px;
-  padding: 4px;
+/* Theme toggle aligned with tabs */
+.um-tabs-right .wf-theme-btn{
+  height: var(--tabControlH);
+  padding: 0 4px;
+
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+
+  border-radius:6px;
+  border:1px solid #000;
+  background: #fff;
   cursor:pointer;
 }
-.wf-theme-option{
-  font-size:10px; font-weight:700;
-  padding: 4px 8px;
-  border-radius: 4px;
-  color: var(--uiMuted);
-  text-transform: uppercase;
-  user-select:none;
+
 }
-.wf-theme-option.active{
-  color: var(--uiText);
-  background: var(--chipBg);
-  box-shadow: 0 0 0 1px var(--uiBorder);
+.um-tabs-right .wf-theme-option{
+  height: calc(var(--tabControlH) - 8px);
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+
+  padding: 0 10px;
+  font-size:10px;
+  font-weight:800;
+  border-radius:4px;
+  line-height:1;
+  text-transform:uppercase;
 }
+
+.um-tabs-right .wf-theme-option.active{
+  background: rgba(0,0,0,0.08);
+}
+
 
 .wf-bottom-controls{
   position: fixed; bottom: 20px; right: 16px; z-index: 100;
