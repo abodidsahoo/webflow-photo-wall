@@ -50,6 +50,7 @@
   .um-global-controls{
     right: 12px;
     bottom: 16px;
+    gap: 8px;
   }
 }
 
