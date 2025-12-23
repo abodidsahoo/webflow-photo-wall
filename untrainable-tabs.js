@@ -1023,138 +1023,76 @@ if (!wall) return;
 
 
 
-
-  /* =========================================================
+/* =========================================================
    GLOBAL CONTROLS (Bottom-right buttons)
-   Theme / Go Top / Load More
+   Theme / Go Top / Load More — FIXED (works immediately on load)
 ========================================================= */
 
-(() => {
-  "use strict";
-
-  /* ---------------------------------
-     Helpers
-  --------------------------------- */
-
-  function getActiveTab() {
-    const btn = document.querySelector(".um-tab.is-active");
-    return btn ? btn.dataset.tab : "t1";
-  }
-
-  function setLoadMoreLabel(text) {
-    const el = document.querySelector("#global-load-more .wf-loadmore-text");
-    if (el) el.textContent = text;
-  }
-
-  /* ---------------------------------
-     THEME TOGGLE (GLOBAL)
-  --------------------------------- */
-
-  const themeBtn = document.getElementById("global-theme-toggle");
-  if (themeBtn) {
-    themeBtn.addEventListener("click", () => {
-      const isDark = document.body.classList.toggle("dark-mode");
-      try {
-        localStorage.setItem("theme", isDark ? "dark" : "light");
-      } catch {}
-
-      // Sync visual state
-      themeBtn.querySelector(".wf-light-opt")?.classList.toggle("active", !isDark);
-      themeBtn.querySelector(".wf-dark-opt")?.classList.toggle("active", isDark);
-    });
-  }
-
-  /* ---------------------------------
-     GO TO TOP (ALL TABS)
-  --------------------------------- */
-
-  const goTopBtn = document.getElementById("global-go-top");
-  if (goTopBtn) {
-    goTopBtn.addEventListener("click", () => {
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    });
-  }
-
-  /* ---------------------------------
-     LOAD MORE (TAB-AWARE ROUTER)
-  --------------------------------- */
-
-  const loadMoreBtn = document.getElementById("global-load-more");
-  if (!loadMoreBtn) return;
-
-  loadMoreBtn.addEventListener("click", () => {
-    const tab = getActiveTab();
-
-    // TAB 1 — Photographs
-    if (tab === "t1" && window.T1_WALL?.loadMore) {
-      window.T1_WALL.loadMore();
-      return;
-    }
-
-    // TAB 2 — Add Responses
-    if (tab === "t2" && window.T2_WALL?.loadMore) {
-      window.T2_WALL.loadMore();
-      return;
-    }
-
-    // TAB 3 — Responses (refresh)
-    if (tab === "t3" && typeof window.refreshResponses === "function") {
-      window.refreshResponses();
-      return;
-    }
-
-    // TAB 4 — Visualization (expand / add nodes)
-    if (tab === "t4" && typeof window.expandVisualization === "function") {
-      window.expandVisualization();
-      return;
-    }
-  });
-
-  /* ---------------------------------
-     Update button label on tab switch
-  --------------------------------- */
-
-  function syncLabelForTab() {
-    const tab = getActiveTab();
-
-    if (tab === "t3") {
-      setLoadMoreLabel("Refresh list");
-    } else if (tab === "t4") {
-      setLoadMoreLabel("Expand view");
-    } else {
-      setLoadMoreLabel("Load more");
-    }
-  }
-
-  document.addEventListener("click", (e) => {
-    if (e.target.closest(".um-tab")) {
-      requestAnimationFrame(syncLabelForTab);
-    }
-  });
-
-  // Initial label sync
-  syncLabelForTab();
-
-})();
-
-
-
-
-  function getActiveTabId(){
-  return document.querySelector(".um-tab.is-active")?.dataset.tab;
+function getActiveTab() {
+  const btn = document.querySelector(".um-tab.is-active");
+  return btn ? btn.dataset.tab : "t1";
 }
 
-document.getElementById("global-go-top")?.addEventListener("click", () => {
-  window.scrollTo({ top: 0, behavior: "smooth" });
-});
+function setLoadMoreLabel(text) {
+  const el = document.querySelector("#global-load-more .wf-loadmore-text");
+  if (el) el.textContent = text;
+}
 
-document.getElementById("global-load-more")?.addEventListener("click", () => {
-  const tab = getActiveTabId();
+function syncLabelForTab() {
+  const tab = getActiveTab();
+  if (tab === "t3") setLoadMoreLabel("Refresh list");
+  else if (tab === "t4") setLoadMoreLabel("Expand view");
+  else setLoadMoreLabel("Load more");
+}
 
-  if (tab === "t1") window.T1_WALL?.loadMore();
-  if (tab === "t2") window.T2_WALL?.loadMore();
-  if (tab === "t4") window.T4_VIZ?.loadMore?.(); // future-ready
-});
+function syncGlobalThemeUI() {
+  const btn = document.getElementById("global-theme-toggle");
+  if (!btn) return;
+  const isDark = document.body.classList.contains("dark-mode");
+  btn.querySelector(".wf-dark-opt")?.classList.toggle("active", isDark);
+  btn.querySelector(".wf-light-opt")?.classList.toggle("active", !isDark);
+}
+
+/**
+ * ✅ Delegated click handling so the controls work even if Webflow renders late.
+ * Uses your existing setTheme() + syncAllThemeButtons() naming.
+ */
+document.addEventListener("click", (e) => {
+  // Theme
+  if (e.target.closest("#global-theme-toggle")) {
+    const next = !document.body.classList.contains("dark-mode");
+    setTheme(next);          // <-- writes to localStorage "theme"
+    syncGlobalThemeUI();     // <-- updates global UI
+    syncAllThemeButtons();   // <-- updates any tab theme UIs (when they exist)
+    return;
+  }
+
+  // Go to top
+  if (e.target.closest("#global-go-top")) {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    return;
+  }
+
+  // Load more
+  if (e.target.closest("#global-load-more")) {
+    const tab = getActiveTab();
+
+    if (tab === "t1" && window.T1_WALL?.loadMore) return window.T1_WALL.loadMore();
+    if (tab === "t2" && window.T2_WALL?.loadMore) return window.T2_WALL.loadMore();
+    if (tab === "t3" && typeof window.refreshResponses === "function") return window.refreshResponses();
+    if (tab === "t4" && typeof window.expandVisualization === "function") return window.expandVisualization();
+    return;
+  }
+
+  // Tab switch: resync label + theme after active class updates
+  if (e.target.closest(".um-tab")) {
+    requestAnimationFrame(() => {
+      syncLabelForTab();
+      syncGlobalThemeUI();
+      syncAllThemeButtons();
+    });
+  }
+}, true);
 
 
   
@@ -1163,11 +1101,11 @@ document.getElementById("global-load-more")?.addEventListener("click", () => {
   /* ===========================
      BOOT
   ============================ */
- function boot() {
+ ffunction boot() {
   // Apply stored theme immediately
   applyThemeFromStorage();
 
-  // 🔑 Force theme system to initialize once
+  // Force theme system to initialize once
   setTheme(document.body.classList.contains("dark-mode"));
 
   // Prepare theme sync registry
@@ -1176,9 +1114,14 @@ document.getElementById("global-load-more")?.addEventListener("click", () => {
   // Init tabs
   setupTabs();
 
+  // ✅ Ensure global controls UI reflects the current theme + tab immediately
+  syncGlobalThemeUI();
+  syncLabelForTab();
+
   // 🔁 Sync all theme buttons once DOM is ready
   setTimeout(syncAllThemeButtons, 0);
 }
+
 
 
   if (document.readyState === "loading") {
