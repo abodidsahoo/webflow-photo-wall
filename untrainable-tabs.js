@@ -1140,6 +1140,25 @@ if (!wall) return;
 
 
 
+  function getActiveTabId(){
+  return document.querySelector(".um-tab.is-active")?.dataset.tab;
+}
+
+document.getElementById("global-go-top")?.addEventListener("click", () => {
+  window.scrollTo({ top: 0, behavior: "smooth" });
+});
+
+document.getElementById("global-load-more")?.addEventListener("click", () => {
+  const tab = getActiveTabId();
+
+  if (tab === "t1") window.T1_WALL?.loadMore();
+  if (tab === "t2") window.T2_WALL?.loadMore();
+  if (tab === "t4") window.T4_VIZ?.loadMore?.(); // future-ready
+});
+
+
+  
+
   
   /* ===========================
      BOOT
