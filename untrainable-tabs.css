@@ -26,6 +26,16 @@
   min-width: 0;
 }
 
+/* Center the whole tab group on larger screens */
+@media (min-width: 768px){
+  .um-tabs-left{
+    justify-content: center;
+    width: 100%;
+  }
+}
+
+}
+
 .um-tabs-right{
   display:flex;
   align-items:center;
