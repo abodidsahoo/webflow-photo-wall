@@ -1404,3 +1404,151 @@
     boot();
   }
 })();
+
+
+
+/* =========================================================
+   TAB 2: FORCE-INJECT "💭 Share your feeling" onto every image
+   Paste this at the VERY END of untrainable-tabs.js
+========================================================= */
+(() => {
+  const WALL_ID = "t2-wf-wall-inner";
+  const BTN_CLASS = "t2-force-share-btn";
+
+  function getWall() {
+    return document.getElementById(WALL_ID);
+  }
+
+  function openTab2Modal(url) {
+    const modal = document.getElementById("t2-wf-modal");
+    const img = document.getElementById("t2-wf-modal-img");
+    const feel = document.getElementById("t2-wf-feel");
+    const name = document.getElementById("t2-wf-name");
+    const status = document.getElementById("t2-wf-status");
+
+    if (!modal || !img) {
+      console.warn("TAB2: Modal elements not found (#t2-wf-modal, #t2-wf-modal-img).");
+      return;
+    }
+
+    img.src = url;
+    img.alt = "";
+    if (status) status.textContent = "";
+    if (name) name.value = "";
+    if (feel) feel.value = "";
+
+    modal.classList.add("is-open");
+    modal.setAttribute("aria-hidden", "false");
+    setTimeout(() => feel && feel.focus(), 0);
+  }
+
+  function bindTab2ModalCloseOnce() {
+    const modal = document.getElementById("t2-wf-modal");
+    if (!modal || modal.dataset.bound === "1") return;
+    modal.dataset.bound = "1";
+
+    const backdrop = document.getElementById("t2-wf-modal-backdrop");
+    const closeBtn = document.getElementById("t2-wf-modal-close");
+
+    const close = () => {
+      modal.classList.remove("is-open");
+      modal.setAttribute("aria-hidden", "true");
+    };
+
+    backdrop && backdrop.addEventListener("click", close);
+    closeBtn && closeBtn.addEventListener("click", close);
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") close();
+    });
+  }
+
+  function ensureButtons() {
+    const wall = getWall();
+    if (!wall) return false;
+
+    bindTab2ModalCloseOnce();
+
+    // If your renderer uses wf-frame/wf-img, this will catch it.
+    // If it doesn't, this still catches all images in Tab 2 wall.
+    const imgs = wall.querySelectorAll("img");
+    if (!imgs.length) return false;
+
+    imgs.forEach((img) => {
+      const url = img.currentSrc || img.src;
+      if (!url) return;
+
+      const frame = img.closest(".wf-frame") || img.parentElement;
+      if (!frame) return;
+
+      // CRITICAL: make absolute positioning correct even if CSS is missing it
+      frame.style.position = "relative";
+
+      // Already injected? Then force it visible again.
+      let btn = frame.querySelector("." + BTN_CLASS);
+      if (btn) {
+        btn.style.display = "inline-flex";
+        btn.style.opacity = "1";
+        btn.style.transform = "none";
+        btn.style.zIndex = "999999";
+        return;
+      }
+
+      // Create the button
+      btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = `wf-comment-btn ${BTN_CLASS}`;
+      btn.textContent = "💭 Share your feeling";
+
+      // HARD FORCE VISIBILITY (inline styles beat your CSS)
+      btn.style.position = "absolute";
+      btn.style.left = "10px";
+      btn.style.bottom = "10px";
+      btn.style.zIndex = "999999";
+      btn.style.display = "inline-flex";
+      btn.style.alignItems = "center";
+      btn.style.justifyContent = "center";
+      btn.style.opacity = "1";             // <-- ALWAYS visible (guaranteed)
+      btn.style.transform = "none";
+      btn.style.pointerEvents = "auto";
+      btn.style.borderRadius = "999px";
+      btn.style.padding = "8px 10px";
+      btn.style.border = "1px solid rgba(0,0,0,0.12)";
+      btn.style.background = "rgba(255,255,255,0.82)";
+      btn.style.backdropFilter = "blur(12px)";
+      btn.style.webkitBackdropFilter = "blur(12px)";
+      btn.style.font = '600 12px/1 system-ui, -apple-system, "Segoe UI", sans-serif';
+      btn.style.cursor = "pointer";
+
+      btn.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        openTab2Modal(url);
+      });
+
+      frame.appendChild(btn);
+    });
+
+    return true;
+  }
+
+  // Run now + keep re-running (covers infinite scroll + tab switching)
+  const run = () => ensureButtons();
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", run);
+  } else {
+    run();
+  }
+
+  // MutationObserver catches newly appended images
+  const rootObserver = new MutationObserver(run);
+  rootObserver.observe(document.documentElement, { childList: true, subtree: true });
+
+  // Also retry a few times in case Webflow delays layout
+  let tries = 0;
+  const timer = setInterval(() => {
+    run();
+    tries++;
+    if (tries >= 40) clearInterval(timer); // ~12 seconds
+  }, 300);
+})();
