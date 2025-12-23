@@ -1,5 +1,5 @@
 /* ===========================
-   TABS SHELL
+   TABS SHELL (UPDATED)
 =========================== */
 .um-root{
   width: 100%;
@@ -7,12 +7,33 @@
   box-sizing: border-box;
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
 }
+
+/* Header row: left tabs + right toggle on same line */
 .um-tabs{
   display:flex;
-  gap:8px;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
   flex-wrap:wrap;
   margin-bottom:16px;
 }
+
+.um-tabs-left{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  flex-wrap:wrap;
+  min-width: 0;
+}
+
+.um-tabs-right{
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  flex: 0 0 auto;
+}
+
+/* Tab buttons unchanged */
 .um-tab{
   padding:10px 14px;
   font-size:12px;
@@ -23,12 +44,35 @@
   color:#000;
   cursor:pointer;
   transition: background .15s ease, color .15s ease;
+  white-space: nowrap;
 }
 .um-tab:hover{ background:#000; color:#fff; }
 .um-tab.is-active{ background:#000; color:#fff; }
 
 .um-panel{ display:none; width:100%; }
 .um-panel.is-active{ display:block; }
+
+/* Mobile tweaks */
+@media (max-width: 767px){
+  .um-root{ padding: 10px; }
+
+  .um-tabs{
+    gap:10px;
+    margin-bottom:12px;
+  }
+
+  .um-tab{
+    padding:8px 10px;
+    font-size:11px;
+  }
+
+  /* Keep toggle aligned nicely when wrapping */
+  .um-tabs-right{
+    width: 100%;
+    justify-content:flex-start;
+  }
+}
+
 
 /* ===========================
    THEME TOKENS
@@ -83,7 +127,6 @@ body.dark-mode{
   gap: var(--gap);
 }
 
-.wf-theme-toggle-wrapper{ position: fixed; top: 16px; right: 16px; z-index: 100; }
 .wf-theme-btn{
   display:flex; align-items:center; gap:2px;
   background: var(--btnBg);
