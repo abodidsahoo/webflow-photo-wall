@@ -627,3 +627,27 @@ body.dark-mode #rp3-root .rp-comment-btn{
   color: rgba(20,20,20,0.55);
   letter-spacing: .2px;
 }
+
+
+
+
+
+
+/* TAB 2: Force the hover button to be visible/positioned correctly */
+#t2-wf-wall-inner .wf-frame { position: relative !important; }
+
+#t2-wf-wall-inner .wf-comment-btn{
+  display: inline-flex !important;
+  align-items: center;
+  pointer-events: auto !important;
+  z-index: 999 !important;
+}
+
+/* Ensure hover reveal works even if something overrides opacity */
+@media (hover: hover) and (pointer: fine){
+  #t2-wf-wall-inner .wf-frame:hover .wf-comment-btn{
+    opacity: 1 !important;
+    transform: translateY(0) !important;
+  }
+}
+
