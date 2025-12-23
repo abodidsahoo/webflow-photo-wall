@@ -1225,7 +1225,8 @@
   
 /* ===== TAB 2: HARD-INJECT "Share your feeling" onto every image frame ===== */
 (() => {
-  const TAB2_PANEL_SEL = '[data-panel="t2"]';
+  
+  const TAB2_PANEL_SEL = '.um-panel[data-panel="t2"]';
   const BTN_CLASS = 't2-force-share-btn';
 
   function getTab2ModalEls() {
