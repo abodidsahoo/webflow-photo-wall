@@ -9,7 +9,7 @@
     "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZiemdjaHJub2JueGt4ZGN1cGVzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjYwMzQ0NDIsImV4cCI6MjA4MTYxMDQ0Mn0.nLdQW8f-nJwCFWUkURcr2ZPA694fAKlseYO__MOPGa8";
 
   const TABLE = "photo_feedback";
-  const IMAGE_JSON_URL = ["https://vbzgchrnobnxkxdcupes.supabase.co/functions/v1/abstract-photos"];
+  const IMAGE_JSON_URL = "https://vbzgchrnobnxkxdcupes.supabase.co/functions/v1/abstract-photos";
   
   const FALLBACK_IMAGES = [
     "https://cdn.prod.website-files.com/67eba6a507dbd0003182ea6e/687eab1ba5d574191f21dfca_S07B0239-2.jpg",
