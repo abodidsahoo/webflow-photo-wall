@@ -1125,33 +1125,43 @@
   }
 
   function syncGlobalThemeUI() {
-    const btn = document.getElementById("global-theme-toggle");
-    if (!btn) return;
+    // Separate buttons for Light/Dark
+    const btnLight = document.getElementById("wf-btn-light");
+    const btnDark = document.getElementById("wf-btn-dark");
+
+    if (!btnLight || !btnDark) return;
+
     const isDark = document.body.classList.contains("dark-mode");
-    btn.querySelector(".wf-dark-opt")?.classList.toggle("active", isDark);
-    btn.querySelector(".wf-light-opt")?.classList.toggle("active", !isDark);
+
+    // Toggle active state
+    btnDark.classList.toggle("active", isDark);
+    btnLight.classList.toggle("active", !isDark);
   }
 
-  /**
-   * ✅ Delegated click handling so the controls work even if Webflow renders late.
-   * Uses your existing setTheme() + syncAllThemeButtons() naming.
-   */
+
+
+  // Theme: Light Button
+  document.getElementById("wf-btn-light")?.addEventListener("click", (e) => {
+    e.preventDefault();
+    setTheme(false); // Force Light
+    syncGlobalThemeUI();
+  });
+
+  // Theme: Dark Button
+  document.getElementById("wf-btn-dark")?.addEventListener("click", (e) => {
+    e.preventDefault();
+    setTheme(true); // Force Dark
+    syncGlobalThemeUI();
+  });
+
+  // ✅ Go to top: restore handler
+  document.getElementById("global-go-top")?.addEventListener("click", (e) => {
+    e.preventDefault();
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  });
+
+  // Delegated listener for Load More and Tabs
   document.addEventListener("click", (e) => {
-    // Theme
-    if (e.target.closest("#global-theme-toggle")) {
-      const next = !document.body.classList.contains("dark-mode");
-      setTheme(next);          // <-- writes to localStorage "theme"
-      syncGlobalThemeUI();     // <-- updates global UI
-      syncAllThemeButtons();   // <-- updates any tab theme UIs (when they exist)
-      return;
-    }
-
-    // Go to top
-    if (e.target.closest("#global-go-top")) {
-      window.scrollTo({ top: 0, behavior: "smooth" });
-      return;
-    }
-
     // Load more
     if (e.target.closest("#global-load-more")) {
       const tab = getActiveTab();

@@ -224,46 +224,58 @@ body.dark-mode {
 
 
 /* Bottom toggle styled like top "pill" (Glassmorphism + Thinner) */
-.wf-bottom-controls .wf-theme-btn {
-  height: 36px;
-  padding: 0 4px;
-  display: inline-flex;
-  align-items: stretch;
-  justify-content: center;
-  border-radius: 6px;
+/* Theme Group Wrapper */
+.wf-theme-group {
+  display: flex;
+  gap: 8px;
+  /* Gap between the two buttons */
+}
 
-  /* Match Go To Top styles */
-  border: 1px solid var(--btnBorder);
+/* Independent Theme Buttons (Light / Dark) */
+/* Exact replica of .wf-goto-btn styles */
+.wf-mode-btn {
+  /* Container Shape & Texture */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 12px;
+  border-radius: 6px;
   background: var(--btnBg);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-
+  border: 1px solid var(--btnBorder);
   cursor: pointer;
   transition: all 0.2s ease;
-}
+  gap: 12px;
 
-.wf-bottom-controls .wf-theme-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow);
-}
-
-.wf-bottom-controls .wf-theme-option {
-  height: 100%;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0 10px;
+  /* Typography */
   font-size: 10px;
   font-weight: 500;
-  /* Thinner font */
-  border-radius: 4px;
-  line-height: 1;
   text-transform: uppercase;
+  letter-spacing: 0.3px;
+  color: var(--uiText);
+  line-height: 1;
+
+  /* Inactive State by default */
+  opacity: 0.5;
 }
 
-.wf-bottom-controls .wf-theme-option.active {
-  background: rgba(0, 0, 0, 0.08);
+.wf-mode-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow);
+  opacity: 0.8;
 }
+
+/* Active State: Highlighted (Bold + Inverted Border) */
+.wf-mode-btn.active {
+  opacity: 1;
+  font-weight: 700;
+  border-color: var(--uiText);
+  /* Highlight Border */
+}
+
+
+
 
 body.dark-mode .wf-bottom-controls .wf-theme-option.active {
   background: rgba(255, 255, 255, 0.18);
