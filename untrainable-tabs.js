@@ -2,7 +2,7 @@
   "use strict";
 
   /* ===========================
-     CONFIG
+     CONFIG (DO NOT MODIFY)
   ============================ */
   const SUPABASE_URL = "https://vbzgchrnobnxkxdcupes.supabase.co";
   const SUPABASE_ANON_KEY =
