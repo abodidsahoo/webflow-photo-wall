@@ -1,0 +1,359 @@
+<!-- =========================
+     UNTRAINABLE MEANINGS — Webflow Embed (Clean Shell + Global Controls)
+     - Keeps your existing JS + Tab2 hover-fix script intact
+     - Moves Theme / Go to top / Load more into ONE global control bar (works on all tabs)
+     - Leaves Tab 2 / Tab 3 modals unchanged
+     - Does NOT change any IDs your untrainable-tabs.js depends on
+========================= -->
+
+<link rel="stylesheet" href="untrainable-tabs.css" />
+
+<script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script defer src="untrainable-tabs.js"></script>
+
+<!-- ✅ KEEP: Your Tab 2 hover/visibility normalizer (unchanged) -->
+<script>
+    (() => {
+        const WALL_ID = "t2-wf-wall-inner";
+        const BTN_Z = 120; // below modal (250), above image
+
+        const isHoverDevice = matchMedia("(hover: hover) and (pointer: fine)").matches;
+        const isTouchDevice = matchMedia("(hover: none)").matches;
+
+        function normalizeFrame(frame) {
+            frame.style.position = "relative";
+            frame.style.isolation = "isolate";
+        }
+
+        function normalizeButton(btn) {
+            btn.style.zIndex = String(BTN_Z);
+            btn.style.pointerEvents = "auto";
+            btn.style.display = "inline-flex";
+            btn.style.visibility = "visible";
+
+            if (isHoverDevice) {
+                btn.style.opacity = "";
+                btn.style.transform = "";
+                btn.style.transition = "";
+            }
+
+            if (isTouchDevice) {
+                btn.style.opacity = "1";
+                btn.style.transform = "translateY(0)";
+            }
+        }
+
+        function fixTab2() {
+            const wall = document.getElementById(WALL_ID);
+            if (!wall) return;
+
+            wall.querySelectorAll(".wf-frame").forEach(frame => {
+                normalizeFrame(frame);
+                frame.querySelectorAll(".wf-comment-btn").forEach(normalizeButton);
+            });
+        }
+
+        function boot() {
+            fixTab2();
+
+            const wall = document.getElementById(WALL_ID);
+            if (wall) {
+                new MutationObserver(() => fixTab2())
+                    .observe(wall, { childList: true, subtree: true });
+            }
+
+            document.addEventListener("click", (e) => {
+                if (e.target?.closest?.('[data-tab="t2"]')) {
+                    setTimeout(fixTab2, 0);
+                    setTimeout(fixTab2, 150);
+                }
+            }, true);
+        }
+
+        if (document.readyState === "loading") {
+            addEventListener("DOMContentLoaded", boot);
+        } else {
+            boot();
+        }
+    })();
+</script>
+
+<!-- ✅ ADD: Minimal CSS to position the global controls (doesn't touch your existing functionality) -->
+<style>
+    /* Tabs row stays as-is; we only add a right-side global controls anchor */
+    .um-tabs {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+    }
+
+    .um-tabs-left {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        align-items: center;
+    }
+
+    /* Global controls: bottom-right, shared across tabs */
+    .um-global-controls {
+        position: fixed;
+        right: 16px;
+        bottom: 20px;
+        z-index: 200;
+        /* below modal (250), above content */
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        align-items: flex-end;
+    }
+</style>
+
+<div class="um-root" id="um-root">
+    <!-- Tabs header row -->
+    <div class="um-tabs" role="tablist" aria-label="Untrainable Meanings Tabs">
+        <div class="um-tabs-left">
+            <button class="um-tab is-active" data-tab="t1" role="tab" aria-selected="true">Photographs</button>
+            <button class="um-tab" data-tab="t2" role="tab" aria-selected="false">Add Responses</button>
+            <button class="um-tab" data-tab="t3" role="tab" aria-selected="false">Responses</button>
+            <button class="um-tab" data-tab="t4" role="tab" aria-selected="false">Visualization</button>
+        </div>
+    </div>
+
+    <!-- ✅ Global controls (ONE place; visible for ALL tabs) -->
+    <div class="um-global-controls" aria-label="Global controls">
+
+
+        <!-- Go to top -->
+        <button id="global-go-top" class="wf-goto-btn" aria-label="Go to top">
+            <span class="wf-goto-text">Go to top</span>
+        </button>
+
+        <!-- Theme -->
+        <button id="global-theme-toggle" class="wf-theme-btn" aria-label="Toggle theme">
+            <span class="wf-theme-text">Light and Dark</span>
+        </button>
+
+
+
+
+    </div>
+
+    <!-- TAB 1: Photographs -->
+    <section class="um-panel is-active" data-panel="t1" role="tabpanel">
+        <div class="wf-wall" id="t1-wf-photo-wall">
+            <!-- IMPORTANT: keep these IDs because untrainable-tabs.js references them -->
+            <div class="wf-wall-inner" id="t1-wf-wall-inner"></div>
+
+            <div class="wf-loading" id="t1-wf-loading" aria-live="polite" aria-busy="false">
+                <div class="wf-loading-pill">
+                    <span class="wf-loading-dot"></span>
+                    <span>Photographs loading</span>
+                </div>
+            </div>
+
+            <div id="t1-wf-sentinel" class="wf-sentinel"></div>
+
+            <!-- (Removed Tab1 local controls; global controls now handle it) -->
+            <!-- (Removed Tab1 local theme wrapper; global controls now handle it) -->
+        </div>
+    </section>
+
+    <!-- TAB 2: Add Responses -->
+    <section class="um-panel" data-panel="t2" role="tabpanel">
+        <div class="wf-wall" id="t2-wf-photo-wall">
+            <!-- IMPORTANT: keep these IDs because untrainable-tabs.js references them -->
+            <div class="wf-wall-inner" id="t2-wf-wall-inner"></div>
+
+            <div class="wf-loading" id="t2-wf-loading" aria-live="polite" aria-busy="false">
+                <div class="wf-loading-pill">
+                    <span class="wf-loading-dot"></span>
+                    <span>Photographs loading</span>
+                </div>
+            </div>
+
+            <div id="t2-wf-sentinel" class="wf-sentinel"></div>
+
+            <!-- (Removed Tab2 local controls + theme wrapper; global controls now handle it) -->
+        </div>
+
+        <!-- Modal (unchanged) -->
+        <div class="wf-modal" id="t2-wf-modal" aria-hidden="true">
+            <div class="wf-modal-backdrop" id="t2-wf-modal-backdrop"></div>
+            <div class="wf-modal-card" role="dialog" aria-modal="true" aria-labelledby="t2-wf-modal-title">
+                <button class="wf-modal-close" id="t2-wf-modal-close" type="button" aria-label="Close">✕</button>
+
+                <div class="wf-modal-head">
+                    <div class="wf-modal-title" id="t2-wf-modal-title">What does this photograph make you feel?</div>
+                    <div class="wf-modal-sub">Your response will be saved with this photograph’s URL for research.</div>
+                </div>
+
+                <div class="wf-modal-preview">
+                    <img id="t2-wf-modal-img" alt="" />
+                </div>
+
+                <form class="wf-modal-form" id="t2-wf-modal-form">
+                    <label class="wf-field">
+                        <span class="wf-label">Name (optional)</span>
+                        <input id="t2-wf-name" type="text" class="wf-input" placeholder="Your name" maxlength="80" />
+                    </label>
+
+                    <label class="wf-field">
+                        <span class="wf-label">What do you feel?</span>
+                        <textarea id="t2-wf-feel" class="wf-textarea" placeholder="Write in a few words…"
+                            maxlength="500" required></textarea>
+                    </label>
+
+                    <div class="wf-actions">
+                        <button id="t2-wf-submit" type="submit" class="wf-submit">Submit</button>
+                        <div class="wf-status" id="t2-wf-status" aria-live="polite"></div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </section>
+
+    <!-- TAB 3: Responses -->
+    <section class="um-panel" data-panel="t3" role="tabpanel">
+        <div class="rp-root" id="rp3-root">
+            <!-- Leave Tab3’s internal theme toggle in place (JS uses it) -->
+            <div class="rp-theme-toggle">
+                <button id="rp3-theme-btn" aria-label="Toggle theme">
+                    <span class="rp-theme-light active">Light</span>
+                    <span class="rp-theme-dark">Dark</span>
+                </button>
+            </div>
+
+            <div class="rp-wrap">
+                <div id="rp3-status" class="rp-status">Loading research data…</div>
+                <div id="rp3-feed" class="rp-feed"></div>
+            </div>
+        </div>
+
+        <!-- Tab 3 Modal (unchanged) -->
+        <div class="wf-modal" id="rp3-wf-modal" aria-hidden="true">
+            <div class="wf-modal-backdrop" id="rp3-wf-modal-backdrop"></div>
+            <div class="wf-modal-card" role="dialog" aria-modal="true" aria-labelledby="rp3-wf-modal-title">
+                <button class="wf-modal-close" id="rp3-wf-modal-close" type="button" aria-label="Close">✕</button>
+
+                <div class="wf-modal-head">
+                    <div class="wf-modal-title" id="rp3-wf-modal-title">What does this photograph make you feel?</div>
+                    <div class="wf-modal-sub">Your response will be saved with this photograph’s URL for research.</div>
+                </div>
+
+                <div class="wf-modal-preview">
+                    <img id="rp3-wf-modal-img" alt="" />
+                </div>
+
+                <form class="wf-modal-form" id="rp3-wf-modal-form">
+                    <label class="wf-field">
+                        <span class="wf-label">Name (optional)</span>
+                        <input id="rp3-wf-name" type="text" class="wf-input" placeholder="Your name" maxlength="80" />
+                    </label>
+
+                    <label class="wf-field">
+                        <span class="wf-label">What do you feel?</span>
+                        <textarea id="rp3-wf-feel" class="wf-textarea" placeholder="Write in a few words…"
+                            maxlength="500" required></textarea>
+                    </label>
+
+                    <div class="wf-actions">
+                        <button id="rp3-wf-submit" type="submit" class="wf-submit">Submit</button>
+                        <div class="wf-status" id="rp3-wf-status" aria-live="polite"></div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </section>
+
+    <!-- TAB 4: Visualization -->
+    <section class="um-panel" data-panel="t4" role="tabpanel">
+        <div id="um-stage" class="um-stage">
+            <div id="um-notes" class="um-notes"></div>
+        </div>
+    </section>
+</div>
+
+
+
+
+
+<style>
+    /* DEBUG: if you don't see a red pill at the bottom, your GitHub CSS isn't loading */
+    #t4-controls {
+        position: fixed !important;
+        left: 50% !important;
+        bottom: 18px !important;
+        transform: translateX(-50%) !important;
+        z-index: 9999 !important;
+        width: min(760px, calc(100% - 28px)) !important;
+    }
+
+    #t4-controls .t4-slider-shell {
+        background: red !important;
+        padding: 12px 14px !important;
+        border-radius: 16px !important;
+        color: white !important;
+    }
+</style>
+
+
+
+
+
+
+<script>
+    (() => {
+        function setTheme(isDark) {
+            document.body.classList.toggle("dark-mode", isDark);
+            document.documentElement.classList.toggle("dark-mode", isDark);
+            try { localStorage.setItem("theme", isDark ? "dark" : "light"); } catch { }
+        }
+
+        function applyThemeFromStorage() {
+            let saved = null;
+            try { saved = localStorage.getItem("theme"); } catch { }
+            const isDark = saved === "dark";
+            setTheme(isDark);
+            syncGlobalThemeUI();
+        }
+
+        function syncGlobalThemeUI() {
+            const btn = document.getElementById("global-theme-toggle");
+            if (!btn) return;
+            const isDark = document.body.classList.contains("dark-mode");
+            btn.querySelector(".wf-dark-opt")?.classList.toggle("active", isDark);
+            btn.querySelector(".wf-light-opt")?.classList.toggle("active", !isDark);
+        }
+
+        function boot() {
+            // Theme: correct immediately on load
+            applyThemeFromStorage();
+
+            // Theme: toggle
+            document.getElementById("global-theme-toggle")?.addEventListener("click", (e) => {
+                e.preventDefault();
+                const next = !document.body.classList.contains("dark-mode");
+                setTheme(next);
+                syncGlobalThemeUI();
+            });
+
+            // ✅ Go to top: restore handler
+            document.getElementById("global-go-top")?.addEventListener("click", (e) => {
+                e.preventDefault();
+                window.scrollTo({ top: 0, behavior: "smooth" });
+            });
+
+            // keep theme UI in sync on tab switch
+            document.addEventListener("click", (e) => {
+                if (e.target?.closest?.(".um-tab")) {
+                    setTimeout(syncGlobalThemeUI, 0);
+                    setTimeout(syncGlobalThemeUI, 120);
+                }
+            }, true);
+        }
+
+        if (document.readyState === "loading") addEventListener("DOMContentLoaded", boot);
+        else boot();
+    })();
+</script>
