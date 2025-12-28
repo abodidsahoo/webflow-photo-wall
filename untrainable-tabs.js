@@ -69,36 +69,36 @@
      THEME
   ============================ */
   function applyThemeFromStorage() {
-  const saved = (() => {
-    try { return localStorage.getItem("theme"); } catch { return null; }
-  })();
+    const saved = (() => {
+      try { return localStorage.getItem("theme"); } catch { return null; }
+    })();
 
-  const isDark = saved === "dark";
+    const isDark = saved === "dark";
 
-  // Apply to all likely theme roots (covers CSS that targets html, body, or containers)
-  document.body.classList.toggle("dark-mode", isDark);
-  document.documentElement.classList.toggle("dark-mode", isDark);
-  document.getElementById("um-root")?.classList.toggle("dark-mode", isDark);
+    // Apply to all likely theme roots (covers CSS that targets html, body, or containers)
+    document.body.classList.toggle("dark-mode", isDark);
+    document.documentElement.classList.toggle("dark-mode", isDark);
+    document.getElementById("um-root")?.classList.toggle("dark-mode", isDark);
 
-  document.querySelectorAll(".wf-wall, .wf-wall-inner, .rp-root, .um-root").forEach((el) => {
-    el.classList.toggle("dark-mode", isDark);
-  });
+    document.querySelectorAll(".wf-wall, .wf-wall-inner, .rp-root, .um-root").forEach((el) => {
+      el.classList.toggle("dark-mode", isDark);
+    });
 
-  return isDark;
-}
+    return isDark;
+  }
 
 
- function setTheme(isDark) {
-  document.body.classList.toggle("dark-mode", isDark);
-  document.documentElement.classList.toggle("dark-mode", isDark);
-  document.getElementById("um-root")?.classList.toggle("dark-mode", isDark);
+  function setTheme(isDark) {
+    document.body.classList.toggle("dark-mode", isDark);
+    document.documentElement.classList.toggle("dark-mode", isDark);
+    document.getElementById("um-root")?.classList.toggle("dark-mode", isDark);
 
-  document.querySelectorAll(".wf-wall, .wf-wall-inner, .rp-root, .um-root").forEach((el) => {
-    el.classList.toggle("dark-mode", isDark);
-  });
+    document.querySelectorAll(".wf-wall, .wf-wall-inner, .rp-root, .um-root").forEach((el) => {
+      el.classList.toggle("dark-mode", isDark);
+    });
 
-  try { localStorage.setItem("theme", isDark ? "dark" : "light"); } catch {}
-}
+    try { localStorage.setItem("theme", isDark ? "dark" : "light"); } catch { }
+  }
 
 
   function setupThemeToggle(btnId, lightSel, darkSel) {
@@ -106,8 +106,8 @@
     if (!btn) return;
 
     // prevent double-binding
-if (btn.dataset.themeBound === "1") return { sync: () => {} };
-btn.dataset.themeBound = "1";
+    if (btn.dataset.themeBound === "1") return { sync: () => { } };
+    btn.dataset.themeBound = "1";
 
     const lightOpt = btn.querySelector(lightSel);
     const darkOpt = btn.querySelector(darkSel);
@@ -157,7 +157,7 @@ btn.dataset.themeBound = "1";
         p.classList.toggle("is-active", on);
       });
 
-      try { localStorage.setItem("um-active-tab", tabId); } catch {}
+      try { localStorage.setItem("um-active-tab", tabId); } catch { }
 
       if (tabId === "t1") initTab1Once();
       if (tabId === "t2") initTab2Once();
@@ -168,7 +168,7 @@ btn.dataset.themeBound = "1";
     tabs.forEach(t => t.addEventListener("click", () => activate(t.dataset.tab)));
 
     let start = "t1";
-    try { start = localStorage.getItem("um-active-tab") || "t1"; } catch {}
+    try { start = localStorage.getItem("um-active-tab") || "t1"; } catch { }
     activate(start);
   }
 
@@ -177,10 +177,10 @@ btn.dataset.themeBound = "1";
   ============================ */
   const LAYOUTS = [
     { cls: "wf-split", need: 2, weight: 32 },
-    { cls: "wf-23",   need: 2, weight: 24 },
-    { cls: "wf-32",   need: 2, weight: 24 },
-    { cls: "wf-3up",  need: 3, weight: 18 },
-    { cls: "wf-4up",  need: 4, weight: 2 }
+    { cls: "wf-23", need: 2, weight: 24 },
+    { cls: "wf-32", need: 2, weight: 24 },
+    { cls: "wf-3up", need: 3, weight: 18 },
+    { cls: "wf-4up", need: 4, weight: 2 }
   ];
 
   function shuffle(arr) {
@@ -385,11 +385,11 @@ btn.dataset.themeBound = "1";
     }
 
     return {
-  setLoading,
-  resetGridWith,
-  loadMore: appendBatch,
-  scrollTop: () => window.scrollTo({ top: 0, behavior: "smooth" })
-};
+      setLoading,
+      resetGridWith,
+      loadMore: appendBatch,
+      scrollTop: () => window.scrollTo({ top: 0, behavior: "smooth" })
+    };
 
   }
 
@@ -583,8 +583,8 @@ btn.dataset.themeBound = "1";
       }
     });
 
-    const PASTELS = ["#f7f2ea","#f3f0ea","#f2f4ff","#f4f7f2","#f8f1f6","#f6f3ff","#f5f6f7","#f3efe8"];
-    const rand = (min,max)=> min + Math.random()*(max-min);
+    const PASTELS = ["#f7f2ea", "#f3f0ea", "#f2f4ff", "#f4f7f2", "#f8f1f6", "#f6f3ff", "#f5f6f7", "#f3efe8"];
+    const rand = (min, max) => min + Math.random() * (max - min);
 
     function groupByImage(rows) {
       const m = new Map();
@@ -605,7 +605,7 @@ btn.dataset.themeBound = "1";
         if (h > 140) section.style.setProperty("--panelH", `${Math.round(h)}px`);
       };
       if (img.complete) apply();
-      img.addEventListener("load", apply, { once:true });
+      img.addEventListener("load", apply, { once: true });
       window.addEventListener("resize", apply);
     }
 
@@ -639,7 +639,7 @@ btn.dataset.themeBound = "1";
         else w = Math.min(260, Math.max(170, Math.floor(W * 0.42)));
 
         c.style.width = w + "px";
-        c.style.background = PASTELS[Math.floor(Math.random()*PASTELS.length)];
+        c.style.background = PASTELS[Math.floor(Math.random() * PASTELS.length)];
 
         const deg = Math.round(rand(-10, 12));
         c.dataset.rot = String(deg);
@@ -650,14 +650,14 @@ btn.dataset.themeBound = "1";
 
       const placed = [];
 
-      function rotatedBBox(w, h, deg){
+      function rotatedBBox(w, h, deg) {
         const a = Math.abs(deg) * Math.PI / 180;
         const cw = Math.abs(Math.cos(a));
         const sw = Math.abs(Math.sin(a));
         return { rw: w * cw + h * sw, rh: w * sw + h * cw };
       }
 
-      function makeRect(card, x, y){
+      function makeRect(card, x, y) {
         const r = card.getBoundingClientRect();
         const deg = parseFloat(card.dataset.rot || "0");
         const { rw, rh } = rotatedBBox(r.width, r.height, deg);
@@ -665,7 +665,7 @@ btn.dataset.themeBound = "1";
         return { x, y, w: rw + pad, h: rh + pad };
       }
 
-      function insideBounds(rect){
+      function insideBounds(rect) {
         return (
           rect.x >= EDGE &&
           rect.y >= EDGE &&
@@ -674,8 +674,8 @@ btn.dataset.themeBound = "1";
         );
       }
 
-      function collides(rect, sep){
-        for (const p of placed){
+      function collides(rect, sep) {
+        for (const p of placed) {
           const overlap =
             rect.x < p.x + p.w + sep &&
             rect.x + rect.w + sep > p.x &&
@@ -693,7 +693,7 @@ btn.dataset.themeBound = "1";
       cards.forEach((card) => {
         let done = false;
 
-        for (let t = 0; t < 380; t++){
+        for (let t = 0; t < 380; t++) {
           const a = t * 0.55;
           const r = 2 + (t * 2.35);
           const px = cx + Math.cos(a) * r;
@@ -708,14 +708,14 @@ btn.dataset.themeBound = "1";
           if (collides(rect, SEP_HARD)) continue;
 
           card.style.left = x + "px";
-          card.style.top  = y + "px";
+          card.style.top = y + "px";
           placed.push(rect);
           done = true;
           break;
         }
 
-        if (!done){
-          for (let t = 0; t < 240; t++){
+        if (!done) {
+          for (let t = 0; t < 240; t++) {
             const a = (t * 0.62) + rand(-0.25, 0.25);
             const r = 8 + (t * 2.8);
             const px = cx + Math.cos(a) * r;
@@ -730,14 +730,14 @@ btn.dataset.themeBound = "1";
             if (collides(rect, SEP_SOFT)) continue;
 
             card.style.left = x + "px";
-            card.style.top  = y + "px";
+            card.style.top = y + "px";
             placed.push(rect);
             done = true;
             break;
           }
         }
 
-        if (!done){
+        if (!done) {
           hidden++;
           card.style.display = "none";
         }
@@ -746,7 +746,7 @@ btn.dataset.themeBound = "1";
       return { hidden };
     }
 
-    function enableShowMoreForPortrait(section){
+    function enableShowMoreForPortrait(section) {
       if (!section.classList.contains("rp-portrait")) return;
       if (window.matchMedia("(max-width: 900px)").matches) return;
 
@@ -844,7 +844,7 @@ btn.dataset.themeBound = "1";
         classifyOrientation(img, section);
 
         const isMobile = window.matchMedia("(max-width: 900px)").matches;
-        if (isMobile){
+        if (isMobile) {
           canvas.style.display = "none";
           grid.style.display = "flex";
           more.style.display = "none";
@@ -877,7 +877,7 @@ btn.dataset.themeBound = "1";
       };
 
       if (img.complete) onReady();
-      else img.addEventListener("load", onReady, { once:true });
+      else img.addEventListener("load", onReady, { once: true });
 
       window.addEventListener("resize", () => {
         if (!section.classList.contains("rp-portrait")) return;
@@ -919,7 +919,7 @@ btn.dataset.themeBound = "1";
   }
 
 
- 
+
   /* ===========================
      TAB INIT (ONCE)
   ============================ */
@@ -945,8 +945,8 @@ btn.dataset.themeBound = "1";
       goTopId: "t1-go-to-top",
       withCommentButton: false
     });
-   const wall = window.T1_WALL;
-   if (!wall) return;
+    const wall = window.T1_WALL;
+    if (!wall) return;
 
 
     (async () => {
@@ -971,7 +971,7 @@ btn.dataset.themeBound = "1";
       btn.dataset.bound = "1";
 
       const lightOpt = btn.querySelector(".t2-wf-light-opt");
-      const darkOpt  = btn.querySelector(".t2-wf-dark-opt");
+      const darkOpt = btn.querySelector(".t2-wf-dark-opt");
 
       const sync = () => {
         const isDark = document.body.classList.contains("dark-mode");
@@ -1003,7 +1003,7 @@ btn.dataset.themeBound = "1";
       onComment: (url) => modal && modal.open(url)
     });
     const wall = window.T2_WALL;
-if (!wall) return;
+    if (!wall) return;
 
 
     (async () => {
@@ -1035,168 +1035,165 @@ if (!wall) return;
   }
 
   function initTab4Once() {
-  if (didT4) return;
-  didT4 = true;
+    if (didT4) return;
+    didT4 = true;
 
-  const stage = document.getElementById("um-stage");
-  const notesLayer = document.getElementById("um-notes");
-  const controlsMount = document.getElementById("t4-controls");
+    const stage = document.getElementById("um-stage");
+    const notesLayer = document.getElementById("um-notes");
+    const controlsMount = document.getElementById("t4-controls");
 
-  if (!stage || !notesLayer || !controlsMount) {
-    console.warn("[Tab4] Missing elements:", { stage: !!stage, notes: !!notesLayer, controls: !!controlsMount });
-    return;
-  }
-
-  initTab4Visualization({ stage, controlsMount });
-}
-
-
-  // Build UI
-  const ui = createTab4SliderUI(mount);
-
-  // Build bubbles
-  const engine = createTab4BubbleEngine({ stageEl: stage });
-  if (!ui || !engine) return;
-
-  // Expose for your global button ("Expand view")
-  window.expandVisualization = () => {
-    const max = engine.items?.length || 1;
-    // jump to max (show all)
-    slider.setValueFromCount(max);
-  };
-
-  // Load data + bind slider
-  let slider = null;
-
-  (async () => {
-    try {
-      // 1) Load response counts per photo
-      const items = await fetchTab4ItemsByResponses();
-
-      // 2) Configure engine
-      engine.setItems(items);
-      engine.start();
-
-      // 3) Bind slider (max = total items)
-      slider = bindTab4Slider({
-        ui,
-        onCountChange: (count) => engine.setCount(count)
-      });
-      slider.setMax(items.length || 1);
-
-      // 4) Start with a nice default (e.g. 12 or all if fewer)
-      const startCount = Math.min(12, items.length || 1);
-      slider.setValueFromCount(startCount);
-
-    } catch (e) {
-      console.warn("[Tab4] Failed to init visualization:", e);
-      // show a tiny hint in the slider area (optional)
-      if (mount) mount.innerHTML = `<div class="t4-slider-shell"><div class="t4-slider-meta">Failed to load visualization</div></div>`;
+    if (!stage || !notesLayer || !controlsMount) {
+      console.warn("[Tab4] Missing elements:", { stage: !!stage, notes: !!notesLayer, controls: !!controlsMount });
+      return;
     }
-  })();
-}
 
-
-
-
-
-
-/* =========================================================
-   GLOBAL CONTROLS (Bottom-right buttons)
-   Theme / Go Top / Load More — FIXED (works immediately on load)
-========================================================= */
-
-function getActiveTab() {
-  const btn = document.querySelector(".um-tab.is-active");
-  return btn ? btn.dataset.tab : "t1";
-}
-
-function setLoadMoreLabel(text) {
-  const el = document.querySelector("#global-load-more .wf-loadmore-text");
-  if (el) el.textContent = text;
-}
-
-function syncLabelForTab() {
-  const tab = getActiveTab();
-  if (tab === "t3") setLoadMoreLabel("Refresh list");
-  else if (tab === "t4") setLoadMoreLabel("Expand view");
-  else setLoadMoreLabel("Load more");
-}
-
-function syncGlobalThemeUI() {
-  const btn = document.getElementById("global-theme-toggle");
-  if (!btn) return;
-  const isDark = document.body.classList.contains("dark-mode");
-  btn.querySelector(".wf-dark-opt")?.classList.toggle("active", isDark);
-  btn.querySelector(".wf-light-opt")?.classList.toggle("active", !isDark);
-}
-
-/**
- * ✅ Delegated click handling so the controls work even if Webflow renders late.
- * Uses your existing setTheme() + syncAllThemeButtons() naming.
- */
-document.addEventListener("click", (e) => {
-  // Theme
-  if (e.target.closest("#global-theme-toggle")) {
-    const next = !document.body.classList.contains("dark-mode");
-    setTheme(next);          // <-- writes to localStorage "theme"
-    syncGlobalThemeUI();     // <-- updates global UI
-    syncAllThemeButtons();   // <-- updates any tab theme UIs (when they exist)
-    return;
+    initTab4Visualization({ stage, controlsMount });
   }
 
-  // Go to top
-  if (e.target.closest("#global-go-top")) {
-    window.scrollTo({ top: 0, behavior: "smooth" });
-    return;
+
+  function initTab4Visualization({ stage, controlsMount: mount }) {
+    // Build UI
+    const ui = createTab4SliderUI(mount);
+
+    // Build bubbles
+    const engine = createTab4BubbleEngine({ stageEl: stage });
+    if (!ui || !engine) return;
+
+    // Expose for your global button ("Expand view")
+    window.expandVisualization = () => {
+      const max = engine.items?.length || 1;
+      // jump to max (show all)
+      slider.setValueFromCount(max);
+    };
+
+    // Load data + bind slider
+    let slider = null;
+
+    (async () => {
+      try {
+        // 1) Load response counts per photo
+        const items = await fetchTab4ItemsByResponses();
+
+        // 2) Configure engine
+        engine.setItems(items);
+        engine.start();
+
+        // 3) Bind slider (max = total items)
+        slider = bindTab4Slider({
+          ui,
+          onCountChange: (count) => engine.setCount(count)
+        });
+        slider.setMax(items.length || 1);
+
+        // 4) Start with a nice default (e.g. 12 or all if fewer)
+        const startCount = Math.min(12, items.length || 1);
+        slider.setValueFromCount(startCount);
+
+      } catch (e) {
+        console.warn("[Tab4] Failed to init visualization:", e);
+        // show a tiny hint in the slider area (optional)
+        if (mount) mount.innerHTML = `<div class="t4-slider-shell"><div class="t4-slider-meta">Failed to load visualization</div></div>`;
+      }
+    })();
   }
 
-  // Load more
-  if (e.target.closest("#global-load-more")) {
+
+
+
+
+
+  /* =========================================================
+     GLOBAL CONTROLS (Bottom-right buttons)
+     Theme / Go Top / Load More — FIXED (works immediately on load)
+  ========================================================= */
+
+  function getActiveTab() {
+    const btn = document.querySelector(".um-tab.is-active");
+    return btn ? btn.dataset.tab : "t1";
+  }
+
+  function setLoadMoreLabel(text) {
+    const el = document.querySelector("#global-load-more .wf-loadmore-text");
+    if (el) el.textContent = text;
+  }
+
+  function syncLabelForTab() {
     const tab = getActiveTab();
-
-    if (tab === "t1" && window.T1_WALL?.loadMore) return window.T1_WALL.loadMore();
-    if (tab === "t2" && window.T2_WALL?.loadMore) return window.T2_WALL.loadMore();
-    if (tab === "t3" && typeof window.refreshResponses === "function") return window.refreshResponses();
-    if (tab === "t4" && typeof window.expandVisualization === "function") return window.expandVisualization();
-    return;
+    if (tab === "t3") setLoadMoreLabel("Refresh list");
+    else if (tab === "t4") setLoadMoreLabel("Expand view");
+    else setLoadMoreLabel("Load more");
   }
 
-  // Tab switch: resync label + theme after active class updates
-  if (e.target.closest(".um-tab")) {
-    requestAnimationFrame(() => {
-      syncLabelForTab();
-      syncGlobalThemeUI();
-      syncAllThemeButtons();
-    });
+  function syncGlobalThemeUI() {
+    const btn = document.getElementById("global-theme-toggle");
+    if (!btn) return;
+    const isDark = document.body.classList.contains("dark-mode");
+    btn.querySelector(".wf-dark-opt")?.classList.toggle("active", isDark);
+    btn.querySelector(".wf-light-opt")?.classList.toggle("active", !isDark);
   }
-}, true);
+
+  /**
+   * ✅ Delegated click handling so the controls work even if Webflow renders late.
+   * Uses your existing setTheme() + syncAllThemeButtons() naming.
+   */
+  document.addEventListener("click", (e) => {
+    // Theme
+    if (e.target.closest("#global-theme-toggle")) {
+      const next = !document.body.classList.contains("dark-mode");
+      setTheme(next);          // <-- writes to localStorage "theme"
+      syncGlobalThemeUI();     // <-- updates global UI
+      syncAllThemeButtons();   // <-- updates any tab theme UIs (when they exist)
+      return;
+    }
+
+    // Go to top
+    if (e.target.closest("#global-go-top")) {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
+
+    // Load more
+    if (e.target.closest("#global-load-more")) {
+      const tab = getActiveTab();
+
+      if (tab === "t1" && window.T1_WALL?.loadMore) return window.T1_WALL.loadMore();
+      if (tab === "t2" && window.T2_WALL?.loadMore) return window.T2_WALL.loadMore();
+      if (tab === "t3" && typeof window.refreshResponses === "function") return window.refreshResponses();
+      if (tab === "t4" && typeof window.expandVisualization === "function") return window.expandVisualization();
+      return;
+    }
+
+    // Tab switch: resync label + theme after active class updates
+    if (e.target.closest(".um-tab")) {
+      requestAnimationFrame(() => {
+        syncLabelForTab();
+        syncGlobalThemeUI();
+        syncAllThemeButtons();
+      });
+    }
+  }, true);
 
 
-  
-
-  
   /* ===========================
      BOOT
   ============================ */
   function boot() {
-  // Apply stored theme immediately
-  applyThemeFromStorage();
+    // Apply stored theme immediately
+    applyThemeFromStorage();
 
-  // Prepare theme sync registry
-  themeSyncers = themeSyncers.filter(Boolean);
+    // Prepare theme sync registry
+    themeSyncers = themeSyncers.filter(Boolean);
 
-  // Init tabs
-  setupTabs();
+    // Init tabs
+    setupTabs();
 
-  // ✅ Ensure global controls UI reflects the current theme + tab immediately
-  syncGlobalThemeUI();
-  syncLabelForTab();
+    // ✅ Ensure global controls UI reflects the current theme + tab immediately
+    syncGlobalThemeUI();
+    syncLabelForTab();
 
-  // 🔁 Sync all theme buttons once DOM is ready
-  setTimeout(syncAllThemeButtons, 0);
-}
-
+    // 🔁 Sync all theme buttons once DOM is ready
+    setTimeout(syncAllThemeButtons, 0);
+  }
 
 
   if (document.readyState === "loading") {

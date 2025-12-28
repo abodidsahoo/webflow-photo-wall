@@ -192,7 +192,7 @@ body.dark-mode{
   cursor:pointer;
 }
 
-}
+
 .um-tabs-right .wf-theme-option{
   height: 100%;  
   display:inline-flex;
@@ -231,7 +231,7 @@ body.dark-mode{
 }
 
 
-}
+
 .wf-goto-btn, .wf-loadmore-btn{
   display:flex; align-items:center; justify-content:center;
   background: var(--btnBg);
