@@ -272,6 +272,8 @@
         <div id="um-stage" class="um-stage">
             <div id="um-notes" class="um-notes"></div>
         </div>
+        <!-- Mount point for Tab 4 visualization controls -->
+        <div id="t4-controls"></div>
     </section>
 </div>
 
@@ -297,64 +299,3 @@
         color: white !important;
     }
 </style>
-
-
-
-
-
-
-<script>
-    (() => {
-        function setTheme(isDark) {
-            document.body.classList.toggle("dark-mode", isDark);
-            document.documentElement.classList.toggle("dark-mode", isDark);
-            try { localStorage.setItem("theme", isDark ? "dark" : "light"); } catch { }
-        }
-
-        function applyThemeFromStorage() {
-            let saved = null;
-            try { saved = localStorage.getItem("theme"); } catch { }
-            const isDark = saved === "dark";
-            setTheme(isDark);
-            syncGlobalThemeUI();
-        }
-
-        function syncGlobalThemeUI() {
-            const btn = document.getElementById("global-theme-toggle");
-            if (!btn) return;
-            const isDark = document.body.classList.contains("dark-mode");
-            btn.querySelector(".wf-dark-opt")?.classList.toggle("active", isDark);
-            btn.querySelector(".wf-light-opt")?.classList.toggle("active", !isDark);
-        }
-
-        function boot() {
-            // Theme: correct immediately on load
-            applyThemeFromStorage();
-
-            // Theme: toggle
-            document.getElementById("global-theme-toggle")?.addEventListener("click", (e) => {
-                e.preventDefault();
-                const next = !document.body.classList.contains("dark-mode");
-                setTheme(next);
-                syncGlobalThemeUI();
-            });
-
-            // ✅ Go to top: restore handler
-            document.getElementById("global-go-top")?.addEventListener("click", (e) => {
-                e.preventDefault();
-                window.scrollTo({ top: 0, behavior: "smooth" });
-            });
-
-            // keep theme UI in sync on tab switch
-            document.addEventListener("click", (e) => {
-                if (e.target?.closest?.(".um-tab")) {
-                    setTimeout(syncGlobalThemeUI, 0);
-                    setTimeout(syncGlobalThemeUI, 120);
-                }
-            }, true);
-        }
-
-        if (document.readyState === "loading") addEventListener("DOMContentLoaded", boot);
-        else boot();
-    })();
-</script>

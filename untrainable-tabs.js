@@ -992,6 +992,11 @@
     })();
 
     const modal = setupTab2Modal();
+    window.TAB2_MODAL = modal;
+    window.openModalFor = (url) => {
+      if (modal) modal.open(url);
+      else console.warn("Modal not ready");
+    };
 
     window.T2_WALL = createPhotoWallController({
       wallInnerId: "t2-wf-wall-inner",
@@ -1000,7 +1005,7 @@
       loadMoreId: "t2-load-more",
       goTopId: "t2-go-to-top",
       withCommentButton: true,
-      onComment: (url) => modal && modal.open(url)
+      onComment: (url) => window.openModalFor(url)
     });
     const wall = window.T2_WALL;
     if (!wall) return;
@@ -1034,16 +1039,207 @@
     initResponsesTab();
   }
 
+
+  /* ===========================
+     TAB 4: VISUALIZATION (Restored)
+  ============================ */
+  async function fetchTab4ItemsByResponses() {
+    try {
+      const supa = getSupaClient();
+      const { data, error } = await supa
+        .from(TABLE)
+        .select("image_url, feeling_text") // Added feeling_text
+        .limit(2000);
+
+      if (error) throw error;
+
+      const map = {};
+      data.forEach(row => {
+        const url = row.image_url;
+        if (!url) return;
+        if (!map[url]) map[url] = { url, count: 0, comments: [] };
+        map[url].count++;
+        // Collect comments (dedupe simply?)
+        if (row.feeling_text) {
+          const txt = row.feeling_text.trim();
+          if (txt && !map[url].comments.includes(txt)) {
+            map[url].comments.push(txt);
+          }
+        }
+      });
+
+      return Object.values(map).sort((a, b) => b.count - a.count);
+    } catch (e) {
+      console.warn("Tab 4 fetch failed", e);
+      return [];
+    }
+  }
+
+  function createTab4BubbleEngine({ stageEl }) {
+    if (!stageEl) return null;
+
+    let _items = [];
+    let _bubbles = [];
+    let _running = false;
+    let _rafId = null;
+    let _time = 0;
+
+    // Pastels for comment cards (duplicated from Tab3 for safety)
+    const PASTELS = ["#f7f2ea", "#f3f0ea", "#f2f4ff", "#f4f7f2", "#f8f1f6", "#f6f3ff", "#f5f6f7", "#f3efe8"];
+
+    function initBubbles() {
+      stageEl.innerHTML = "";
+      _bubbles = [];
+
+      const W = stageEl.clientWidth;
+      const H = stageEl.clientHeight;
+
+      _items.forEach((item, i) => {
+        // Size logic
+        const rawSize = 80 + (item.count * 10);
+        const size = Math.min(220, Math.max(90, rawSize));
+
+        const el = document.createElement("div");
+        el.className = "bubble-node";
+        el.style.width = `${size}px`;
+        el.style.height = `${size}px`;
+        el.style.backgroundImage = `url('${item.url}')`;
+
+        // --- HOVER INTERACTION (Radial Comments) ---
+        const commentContainer = document.createElement("div");
+        commentContainer.className = "bubble-radial-container";
+        el.appendChild(commentContainer);
+
+        el.addEventListener("mouseenter", () => {
+          // Generate cards on hover
+          commentContainer.innerHTML = "";
+          // Only show up to 8 comments
+          const commentsToShow = (item.comments || []).slice(0, 8);
+          if (!commentsToShow.length) return;
+
+          const radius = (size / 2) + 14; // Start just outside bubble
+          const angleStep = (2 * Math.PI) / commentsToShow.length;
+
+          commentsToShow.forEach((txt, idx) => {
+            const card = document.createElement("div");
+            card.className = "bubble-comment-card";
+            card.textContent = txt;
+            card.style.background = PASTELS[Math.floor(Math.random() * PASTELS.length)];
+
+            // Position radially
+            // We want them distributed around. 
+            // Let's use CSS translate to position them relative to center
+            const angle = idx * angleStep - (Math.PI / 2); // start top
+            const cx = Math.cos(angle) * (radius + 60); // +60 to push out further so card center isn't on edge
+            const cy = Math.sin(angle) * (radius + 40);
+
+            // Using standard left/top with transform centered
+            card.style.transform = `translate(${cx}px, ${cy}px) translate(-50%, -50%)`;
+
+            // Stagger animation
+            card.style.animationDelay = `${idx * 0.05}s`;
+
+            commentContainer.appendChild(card);
+          });
+        });
+
+        // Click -> Open Modal
+        el.addEventListener("click", (e) => {
+          e.stopPropagation();
+          if (item.url && window.openModalFor) {
+            window.openModalFor(item.url);
+          }
+        });
+
+        // Badge
+        if (item.count > 0) {
+          const badge = document.createElement("div");
+          badge.className = "bubble-badge";
+          badge.textContent = item.count;
+          el.appendChild(badge);
+        }
+
+        stageEl.appendChild(el);
+
+        // --- SINUSOIDAL PHYSICS SETUP ---
+        // Origin point (fixed-ish)
+        const originX = Math.random() * (W - size);
+        const originY = Math.random() * (H - size);
+
+        // Drift params
+        // Phase: start at different point in sine wave
+        const phaseX = Math.random() * Math.PI * 2;
+        const phaseY = Math.random() * Math.PI * 2;
+
+        // Speed: Slow drift
+        const speed = 0.0005 + (Math.random() * 0.0008);
+
+        // Amp: How far it drifts (20px to 60px)
+        const amp = 20 + Math.random() * 40;
+
+        _bubbles.push({
+          el,
+          originX, originY,
+          phaseX, phaseY,
+          speed, amp,
+          size
+        });
+      });
+    }
+
+    function update(timestamp) {
+      if (!_running) return;
+      // if (!timestamp) timestamp = performance.now();
+
+      const W = stageEl.clientWidth;
+      const H = stageEl.clientHeight;
+
+      _bubbles.forEach((b) => {
+        // Calculate Sine drift
+        // x = origin + sin(t*speed + phase) * amp
+        // This guarantees it stays around origin, very smooth
+
+        const offsetX = Math.sin(timestamp * b.speed + b.phaseX) * b.amp;
+        const offsetY = Math.cos(timestamp * b.speed + b.phaseY) * b.amp; // cos for Y to make circular-ish paths?
+
+        // Bound checks: ensure origin doesn't drift? Origin is fixed.
+        // Just apply transform.
+        // We use translate3d for GPU smoothness
+        b.el.style.transform = `translate3d(${b.originX + offsetX}px, ${b.originY + offsetY}px, 0)`;
+      });
+
+      _rafId = requestAnimationFrame(update);
+    }
+
+    return {
+      setItems: (items) => {
+        _items = items;
+        initBubbles();
+      },
+      start: () => {
+        if (!_running) {
+          _running = true;
+          requestAnimationFrame(update);
+        }
+      },
+      stop: () => {
+        _running = false;
+        if (_rafId) cancelAnimationFrame(_rafId);
+      }
+    };
+  }
+
   function initTab4Once() {
     if (didT4) return;
     didT4 = true;
 
     const stage = document.getElementById("um-stage");
     const notesLayer = document.getElementById("um-notes");
+    // t4-controls is optional now since slider is gone
     const controlsMount = document.getElementById("t4-controls");
 
-    if (!stage || !notesLayer || !controlsMount) {
-      console.warn("[Tab4] Missing elements:", { stage: !!stage, notes: !!notesLayer, controls: !!controlsMount });
+    if (!stage || !notesLayer) {
+      console.warn("[Tab4] Missing elements:", { stage: !!stage, notes: !!notesLayer });
       return;
     }
 
@@ -1052,22 +1248,19 @@
 
 
   function initTab4Visualization({ stage, controlsMount: mount }) {
-    // Build UI
-    const ui = createTab4SliderUI(mount);
-
     // Build bubbles
     const engine = createTab4BubbleEngine({ stageEl: stage });
-    if (!ui || !engine) return;
+    if (!engine) return;
+
+    // Clear any controls if they exist (removing slider)
+    if (mount) mount.innerHTML = "";
 
     // Expose for your global button ("Expand view")
     window.expandVisualization = () => {
-      const max = engine.items?.length || 1;
-      // jump to max (show all)
-      slider.setValueFromCount(max);
+      // With physics engine, maybe we just ensure it's running? 
+      // or maybe re-randomize velocity?
+      engine.start();
     };
-
-    // Load data + bind slider
-    let slider = null;
 
     (async () => {
       try {
@@ -1078,21 +1271,8 @@
         engine.setItems(items);
         engine.start();
 
-        // 3) Bind slider (max = total items)
-        slider = bindTab4Slider({
-          ui,
-          onCountChange: (count) => engine.setCount(count)
-        });
-        slider.setMax(items.length || 1);
-
-        // 4) Start with a nice default (e.g. 12 or all if fewer)
-        const startCount = Math.min(12, items.length || 1);
-        slider.setValueFromCount(startCount);
-
       } catch (e) {
         console.warn("[Tab4] Failed to init visualization:", e);
-        // show a tiny hint in the slider area (optional)
-        if (mount) mount.innerHTML = `<div class="t4-slider-shell"><div class="t4-slider-meta">Failed to load visualization</div></div>`;
       }
     })();
   }
@@ -1101,6 +1281,219 @@
 
 
 
+
+  /* ===========================
+     TAB 4: VISUALIZATION (Restored)
+  ============================ */
+  async function fetchTab4ItemsByResponses() {
+    try {
+      const supa = getSupaClient();
+      const { data, error } = await supa
+        .from(TABLE)
+        .select("image_url, feeling_text") // Added feeling_text
+        .limit(2000);
+
+      if (error) throw error;
+
+      const map = {};
+      data.forEach(row => {
+        const url = row.image_url;
+        if (!url) return;
+        if (!map[url]) map[url] = { url, count: 0, comments: [] };
+        map[url].count++;
+        // Collect comments (dedupe simply?)
+        if (row.feeling_text) {
+          const txt = row.feeling_text.trim();
+          if (txt && !map[url].comments.includes(txt)) {
+            map[url].comments.push(txt);
+          }
+        }
+      });
+
+      return Object.values(map).sort((a, b) => b.count - a.count);
+    } catch (e) {
+      console.warn("Tab 4 fetch failed", e);
+      return [];
+    }
+  }
+
+  function createTab4BubbleEngine({ stageEl }) {
+    if (!stageEl) return null;
+
+    let _items = [];
+    let _bubbles = [];
+    let _running = false;
+    let _rafId = null;
+
+    // Pastels for comment cards
+    const PASTELS = ["#f7f2ea", "#f3f0ea", "#f2f4ff", "#f4f7f2", "#f8f1f6", "#f6f3ff", "#f5f6f7", "#f3efe8"];
+
+    function initBubbles() {
+      stageEl.innerHTML = "";
+      _bubbles = [];
+
+      const W = stageEl.clientWidth;
+      const H = stageEl.clientHeight;
+      const total = _items.length || 1;
+
+      // Sort items by count desc
+      const sortedItems = [..._items].sort((a, b) => b.count - a.count);
+
+      sortedItems.forEach((item, i) => {
+        // Size logic (Extra Large for popular)
+        const rawSize = 80 + (item.count * 15);
+        const size = Math.min(300, Math.max(90, rawSize));
+
+        const el = document.createElement("div");
+        el.className = "bubble-node";
+        el.style.width = `${size}px`;
+        el.style.height = `${size}px`;
+        el.style.backgroundImage = `url('${item.url}')`;
+
+        // --- HOVER INTERACTION (Radial Comments) ---
+        const commentContainer = document.createElement("div");
+        commentContainer.className = "bubble-radial-container";
+        el.appendChild(commentContainer);
+
+        let hoverTimeout = null;
+
+        // ENTER: Show comments
+        el.addEventListener("mouseenter", () => {
+          // 1. NO PAUSE - Floating Interaction
+
+          if (hoverTimeout) clearTimeout(hoverTimeout);
+          commentContainer.innerHTML = "";
+
+          // Only show up to 8 comments
+          const commentsToShow = (item.comments || []).slice(0, 8);
+          if (!commentsToShow.length) return;
+
+          // DYNAMIC RADIUS CALCULATION
+          // If long text (>50 chars), push out further
+          const hasLongText = commentsToShow.some(c => c.length > 50);
+          const baseBuffer = hasLongText ? 90 : 50;
+
+          const baseRadius = (size / 2) + baseBuffer;
+          const growth = (commentsToShow.length * 4);
+
+          // STRICT RADIAL
+          const radiusJitter = 0;
+          const angleJitter = (Math.random() * 0.4 - 0.2);
+
+          const effectiveRadius = baseRadius + growth + radiusJitter;
+
+          // Start from top (-PI/2) + jitter
+          const startAngle = -Math.PI / 2 + angleJitter;
+          const angleStep = (2 * Math.PI) / commentsToShow.length;
+
+          commentsToShow.forEach((txt, idx) => {
+            const card = document.createElement("div");
+            card.className = "bubble-comment-card in";
+            card.textContent = txt;
+            card.style.background = PASTELS[Math.floor(Math.random() * PASTELS.length)];
+
+            // Position: Strictly around circle
+            const angle = startAngle + (idx * angleStep);
+            const cx = Math.cos(angle) * effectiveRadius;
+            const cy = Math.sin(angle) * effectiveRadius;
+
+            card.style.setProperty('--tx', `${cx}px`);
+            card.style.setProperty('--ty', `${cy}px`);
+
+            // Entry: SLOWER Stagger
+            // 0.12s per item for "clearly visible" stagger
+            card.style.animationDelay = `${idx * 0.12}s`;
+
+            commentContainer.appendChild(card);
+          });
+        });
+
+        // LEAVE: Reverse Sequential Exit
+        el.addEventListener("mouseleave", () => {
+          const cards = Array.from(commentContainer.children);
+          if (!cards.length) return;
+
+          // Apply exit
+          cards.forEach((card, idx) => {
+            card.classList.remove("in");
+            card.classList.add("out");
+
+            // REVERSE EXIT (LIFO behavior)
+            // Same Stagger Speed (0.12s)
+            const reverseIdx = (cards.length - 1) - idx;
+            card.style.animationDelay = `${reverseIdx * 0.12}s`;
+          });
+
+          // Cleanup strictly (Wait for max delay + anim time)
+          // Max delay = (8-1)*0.12 = 0.84s. Anim = 0.4s. Total = 1.24s.
+          // Set 1400ms buffer to be safe.
+          hoverTimeout = setTimeout(() => {
+            commentContainer.innerHTML = "";
+          }, 1400);
+        });
+
+        // Click -> Open Modal
+        el.addEventListener("click", (e) => {
+          e.stopPropagation();
+          if (item.url && window.openModalFor) {
+            window.openModalFor(item.url);
+          }
+        });
+
+        stageEl.appendChild(el);
+
+        // --- POSITION & PHYSICS SETUP ---
+        const rankY = (i / total) * (H * 0.9) + 40;
+        const originX = Math.random() * (W - size);
+        const originY = rankY + (Math.random() * 80 - 40);
+
+        const phaseX = Math.random() * Math.PI * 2;
+        const phaseY = Math.random() * Math.PI * 2;
+        const speed = 0.0002 + (Math.random() * 0.0004);
+        const amp = 10 + Math.random() * 25;
+
+        _bubbles.push({
+          el,
+          originX, originY,
+          phaseX, phaseY,
+          speed, amp,
+          size
+          // No paused state
+        });
+      });
+    }
+
+    function update(timestamp) {
+      if (!_running) return;
+
+      _bubbles.forEach((b) => {
+        // Continuous physics (No pause check)
+        const offsetX = Math.sin(timestamp * b.speed + b.phaseX) * b.amp;
+        const offsetY = Math.cos(timestamp * b.speed + b.phaseY) * b.amp;
+
+        b.el.style.transform = `translate3d(${b.originX + offsetX}px, ${b.originY + offsetY}px, 0)`;
+      });
+
+      _rafId = requestAnimationFrame(update);
+    }
+
+    return {
+      setItems: (items) => {
+        _items = items;
+        initBubbles();
+      },
+      start: () => {
+        if (!_running) {
+          _running = true;
+          requestAnimationFrame(update);
+        }
+      },
+      stop: () => {
+        _running = false;
+        if (_rafId) cancelAnimationFrame(_rafId);
+      }
+    };
+  }
 
   /* =========================================================
      GLOBAL CONTROLS (Bottom-right buttons)
@@ -1137,8 +1530,6 @@
     btnDark.classList.toggle("active", isDark);
     btnLight.classList.toggle("active", !isDark);
   }
-
-
 
   // Theme: Light Button
   document.getElementById("wf-btn-light")?.addEventListener("click", (e) => {
@@ -1183,7 +1574,6 @@
     }
   }, true);
 
-
   /* ===========================
      BOOT
   ============================ */
@@ -1204,7 +1594,6 @@
     // 🔁 Sync all theme buttons once DOM is ready
     setTimeout(syncAllThemeButtons, 0);
   }
-
 
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", boot);

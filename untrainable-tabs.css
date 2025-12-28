@@ -1103,18 +1103,106 @@ body.dark-mode #rp3-root .rp-comment-btn {
    TAB 4: BUBBLES (used by Tab4 JS engine)
    If your older viz uses .um-node, this is separate and safe.
 ========================================================= */
-.t4-bubble {
-  position: absolute;
-  border-radius: 999px;
+#um-stage {
+  position: relative;
+  width: 100%;
+  height: 100%;
   overflow: hidden;
-  will-change: transform;
-  user-select: none;
-  z-index: 12;
-
-  /* soft 3D */
-  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.18);
-  transform: translateZ(0);
+  /* "Stage" for the engine */
 }
+
+.bubble-node {
+  position: absolute;
+  top: 0;
+  left: 0;
+  border-radius: 50%;
+  background-size: cover;
+  background-position: center;
+  /* Thinner, soft beige border */
+  border: 2px solid #E0D8CC;
+  /* Soft drop shadow */
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  cursor: pointer;
+  will-change: transform;
+  /* Interaction */
+  transition: transform 0.2s ease, border-color 0.2s;
+  z-index: 10;
+}
+
+.bubble-node:hover {
+  border-color: #bbb;
+  /* Slightly darker interaction state */
+  z-index: 100;
+  /* Bring to front on hover */
+}
+
+.bubble-badge {
+  display: none;
+  /* User requested removal */
+}
+
+/* Radial Menu Container */
+.bubble-radial-container {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+  /* Cards obscure bubble, but container is zero size */
+  overflow: visible;
+}
+
+/* Comment Card */
+.bubble-comment-card {
+  position: absolute;
+  top: 0;
+  left: 0;
+
+  /* SIZING STABILITY FIX: */
+  /* Move max-content here so it doesn't change when .in is removed */
+  width: max-content;
+  max-width: 300px;
+  min-width: 120px;
+
+  padding: 10px 14px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  color: #444;
+  font-size: 11px;
+  line-height: 1.35;
+  font-weight: 500;
+  text-align: center;
+  pointer-events: none;
+
+  /* Start State: Centered, Hidden, Small */
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0.8);
+  will-change: transform, opacity;
+
+  word-wrap: break-word;
+}
+
+.bubble-comment-card.in {
+  opacity: 1;
+  /* Scale to 1 means normal size */
+  transform: translate(calc(var(--tx) - 50%), calc(var(--ty) - 50%)) scale(1);
+
+  /* Slow, soft entry */
+  transition: opacity 0.4s cubic-bezier(0.25, 1, 0.5, 1),
+    transform 0.5s cubic-bezier(0.19, 1, 0.22, 1);
+}
+
+.bubble-comment-card.out {
+  opacity: 0;
+  /* Stay at scale 1 or slightly smaller, but don't jump size */
+  transform: translate(calc(var(--tx) - 50%), calc(var(--ty) - 50%)) scale(0.95);
+
+  /* Slow, soft exit */
+  transition: opacity 0.4s ease-in, transform 0.4s ease-in;
+}
+
+
 
 .t4-bubble img {
   width: 100%;
